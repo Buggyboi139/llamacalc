@@ -258,6 +258,7 @@
         reusePort:'Enables port reuse.',
         staticPath:'Sets the static file path.',
         embdNormalize:'Sets embedding normalization behavior.',
+        dflashModel:'Sets a DFlash draft model and automatically enables draft-dflash speculative decoding.',
         specType:'Sets the speculative decoding type.',
         specDefault:'Enables default speculative decoding settings.',
         specDraftModel:'Sets the draft model path.',

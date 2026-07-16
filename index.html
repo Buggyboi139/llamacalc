@@ -98,6 +98,7 @@
         </section>
     </main>
 
+    <script src="command-rules.js"></script>
     <script src="script.js"></script>
     <script>
         (() => {
@@ -194,7 +195,7 @@
             ]));
 
             const tips = {
-                modelPath:'Path to a local GGUF model file.',ctxSize:'Maximum context window in tokens.',gpuLayers:'Number of model layers to offload to GPU.',flashAttn:'Use flash attention when your backend and model support it.',cacheTypeK:'Precision used for key cache memory.',cacheTypeV:'Precision used for value cache memory.',host:'Network address the server binds to.',port:'TCP port used by the server.',parallel:'Number of server slots that can run in parallel.',ropeScaling:'RoPE scaling mode for long-context use.',rpc:'Comma-separated RPC backend servers.',specType:'Speculative decoding mode, including draft-mtp when supported.',mtpRawFlags:'Raw speculative or MTP flags appended exactly as written.',extraFlags:'Raw extra llama.cpp flags appended exactly as written.'
+                modelPath:'Path to a local GGUF model file.',ctxSize:'Maximum context window in tokens.',gpuLayers:'Number of model layers to offload to GPU.',flashAttn:'Use flash attention when your backend and model support it.',cacheTypeK:'Precision used for key cache memory.',cacheTypeV:'Precision used for value cache memory.',host:'Network address the server binds to.',port:'TCP port used by the server.',parallel:'Number of server slots that can run in parallel.',ropeScaling:'RoPE scaling mode for long-context use.',rpc:'Comma-separated RPC backend servers.',dflashModel:'Sets a DFlash draft model and automatically enables draft-dflash speculative decoding.',specType:'Speculative decoding mode, including draft-mtp when supported.',mtpRawFlags:'Raw speculative or MTP flags appended exactly as written.',extraFlags:'Raw extra llama.cpp flags appended exactly as written.'
             };
             const genericTip = label => `${label.replace(/\?+$/,'')} controls a llama.cpp command option.`;
             const addTip = (el, text) => {
@@ -252,7 +253,7 @@
                 });
             };
 
-            const mainIds = ['serverPath','cliPath','modelPath','hfRepo','hfFile','ctxSize','predict','batchSize','ubatchSize','threads','threadsBatch','gpuLayers','device','flashAttn','cacheTypeK','cacheTypeV','kvOffload','host','port','parallel','prompt','systemPrompt','chatTemplate','reasoning','specType','specDraftModel','mtpRawFlags','extraFlags'];
+            const mainIds = ['serverPath','cliPath','modelPath','hfRepo','hfFile','ctxSize','predict','batchSize','ubatchSize','threads','threadsBatch','gpuLayers','device','flashAttn','cacheTypeK','cacheTypeV','kvOffload','host','port','parallel','prompt','systemPrompt','chatTemplate','reasoning','dflashModel','specType','specDraftModel','mtpRawFlags','extraFlags'];
 
             renderBuilder();
             applyState();
