@@ -9,6 +9,10 @@ function readIndex() {
     return fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 }
 
+function readStyles() {
+    return fs.readFileSync(path.join(root, 'style.css'), 'utf8');
+}
+
 test('shell has exactly one global flag search', () => {
     const html = readIndex();
     assert.equal((html.match(/type="search"/g) || []).length, 1);
@@ -131,4 +135,16 @@ test('renderer search results reuse canonical flag state keys', () => {
     assert.equal(container.children.length, 1);
     assert.equal(container.children[0].dataset.flagId, 'flashAttn');
     assert.ok(descendants(container.children[0]).some(element => element.dataset.flagId === 'flashAttn'));
+});
+
+test('cosmic styles expose the approved visual and accessibility tokens', () => {
+    const css = readStyles();
+    for (const token of ['--neutral-primary-soft', '--signal-cyan', '--signal-violet', '--focus-ring']) {
+        assert.match(css, new RegExp(token));
+    }
+    assert.match(css, /font-family:\s*["']?Audiowide/i);
+    assert.match(css, /prefers-reduced-motion/);
+    assert.match(css, /forced-colors/);
+    assert.match(css, /:focus-visible/);
+    assert.match(css, /@media\s*\(max-width:\s*720px\)/);
 });

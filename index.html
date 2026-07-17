@@ -22,7 +22,10 @@
         <div class="header-search">
             <label for="flagSearch">Search every flag</label>
             <div class="search-control">
-                <span aria-hidden="true">⌕</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-4-4"></path>
+                </svg>
                 <input id="flagSearch" type="search" autocomplete="off" spellcheck="false"
                     placeholder="Flag, alias, category, or description…" aria-controls="flagWorkspace">
                 <kbd aria-hidden="true">/</kbd>
@@ -71,7 +74,7 @@
             <div class="workspace-heading">
                 <div>
                     <p class="eyebrow" id="workspaceEyebrow">Essentials</p>
-                    <h1 id="workspaceHeading">Configure your command</h1>
+                    <div class="heading-glow"><h1 id="workspaceHeading">Configure your command</h1></div>
                     <p id="workspaceSummary">Frequently used options for the selected llama.cpp tool.</p>
                 </div>
                 <output id="resultCount" aria-live="polite"></output>
@@ -84,7 +87,7 @@
             </div>
         </section>
 
-        <aside class="command-panel" aria-labelledby="commandHeading">
+        <aside id="commandPanel" class="command-panel" aria-labelledby="commandHeading">
             <div class="command-heading">
                 <div>
                     <p class="eyebrow" id="commandPlatformLabel">Linux · Bash/Zsh</p>
