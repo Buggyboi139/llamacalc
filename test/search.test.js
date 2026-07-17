@@ -8,7 +8,19 @@ const registry = createRegistry({
     executables: {},
     categories: [
         { id: 'runtime', label: 'Runtime & context' },
-        { id: 'prompt', label: 'Prompt & chat' }
+        { id: 'prompt', label: 'Prompt & chat' },
+        { id: 'speculative', label: 'Speculative decoding' }
+    ],
+    fields: [
+        {
+            id: 'dflashModel',
+            label: 'DFlash model path',
+            category: 'speculative',
+            modes: ['cli', 'server'],
+            aliases: ['DFlash', 'draft-dflash'],
+            value: { type: 'string' },
+            description: 'Selects a DFlash draft model. It automatically enables the draft-dflash speculative type.'
+        }
     ],
     flags: [
         {
@@ -74,4 +86,9 @@ test('does not return CLI-only options in server mode', () => {
 
 test('empty search returns no results', () => {
     assert.deepEqual(searchFlags(registry, '  ', 'server'), []);
+});
+
+test('search includes JSON-defined DFlash builder shortcuts', () => {
+    assert.equal(searchFlags(registry, 'dflash', 'server')[0].flag.id, 'dflashModel');
+    assert.equal(searchFlags(registry, 'speculative decoding', 'cli').some(result => result.flag.id === 'dflashModel'), true);
 });

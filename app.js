@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchQuery = '';
             searchInput.value = '';
             update();
+            LlamaCalcRender.scrollToFlagWorkspace(document);
         },
         onWarningFocus: focusField,
         onCopyLog(log) {

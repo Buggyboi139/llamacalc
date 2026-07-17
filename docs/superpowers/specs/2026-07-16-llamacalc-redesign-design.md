@@ -38,7 +38,7 @@ Registry status rules are:
 - **Deprecated but accepted:** rendered with a visible deprecated badge and replacement guidance when upstream provides it.
 - **Removed:** not represented, rendered, migrated, or serialized.
 
-Removed upstream aliases that merely print an error are not treated as supported flags. The existing DFlash shortcut is removed because `draft-dflash` is not a current supported speculative type in the official CLI or server help. Informational actions such as help, version, cache listing, and completion remain valid builder options when current help exposes them.
+Removed upstream aliases that merely print an error are not treated as supported flags. The DFlash shortcut is retained because current `docs/speculative.md` documents `draft-dflash`; it composes the current `-md` and `--spec-type` arguments without inventing an alias. Informational actions such as help, version, cache listing, and completion remain valid builder options when current help exposes them.
 
 ## Information architecture
 
@@ -78,6 +78,8 @@ Each option is shown once per view as a compact row containing:
 - the appropriate input, select, checkbox, or paired enable/disable control;
 - configured, deprecated, experimental, secret, or mode-only status when applicable;
 - a keyboard-focusable help trigger.
+
+Finite single-choice parameters use JSON-defined dropdowns with an explicit Unset option. Parameters that accept ordered or comma-separated combinations remain text inputs so the builder preserves the complete current llama.cpp syntax.
 
 Every supported option has an authored two-to-three-sentence explanation in the JSON registry. The first sentence explains what the option controls; the remaining sentence or sentences explain when to use it, an important default, or a consequential interaction. The same content is available on pointer hover and keyboard focus and is not hidden from assistive technology.
 

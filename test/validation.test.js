@@ -29,6 +29,11 @@ test('reports numeric format errors from registry metadata', () => {
     assert.match(result.errorsById.get('temp'), /number/);
 });
 
+test('rejects values outside a dropdown current option set', () => {
+    const result = validateState(registry, stateWith({ cacheTypeK: 'q2_0' }));
+    assert.match(result.errorsById.get('cacheTypeK'), /current option/);
+});
+
 test('warns about model source priority in its current order', () => {
     const result = validateState(registry, stateWith({
         modelPath: '/models/local.gguf',

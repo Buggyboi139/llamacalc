@@ -50,7 +50,6 @@ test('removed and stale options are absent', () => {
     ]) {
         assert.equal(aliases.has(stale), false, stale);
     }
-    assert.equal(data.flags.some(flag => flag.id === 'dflashModel'), false);
 });
 
 test('current newly audited families are present', () => {
@@ -82,8 +81,18 @@ test('registry exposes executable defaults for all supported targets', () => {
 test('registry includes non-flag builder fields without mixing them into the option audit', () => {
     const ids = new Set(data.fields.map(field => field.id));
 
-    assert.deepEqual([...ids].sort(), ['cliPath', 'extraFlags', 'serverPath']);
+    assert.deepEqual([...ids].sort(), ['cliPath', 'dflashModel', 'extraFlags', 'serverPath']);
     assert.equal(data.fields.find(field => field.id === 'extraFlags').value.type, 'textarea');
+    const dflash = data.fields.find(field => field.id === 'dflashModel');
+    assert.equal(dflash.category, 'speculative');
+    assert.equal(dflash.featured, true);
+    assert.match(dflash.description, /draft-dflash/);
+});
+
+test('DFlash shortcut tracks the current accepted speculative type', () => {
+    const documentation = fs.readFileSync('/home/dsmason321/llama.cpp/docs/speculative.md', 'utf8');
+    assert.match(documentation, /--spec-type draft-dflash/);
+    assert.match(documentation, /\| `draft-dflash` \|/);
 });
 
 test('essentials and model-source precedence are metadata driven', () => {
@@ -109,6 +118,34 @@ test('choice and numeric metadata is ready for generic rendering and validation'
             assert.equal(typeof option.value, 'string', flag.id);
             assert.equal(typeof option.label, 'string', flag.id);
         }
+    }
+});
+
+test('every current finite single-choice parameter is a dropdown', () => {
+    const registry = createRegistry(data);
+    const optionValues = id => registry.byId.get(id).value.options.map(option => option.value);
+    const cacheTypes = ['', 'f32', 'f16', 'bf16', 'q8_0', 'q4_0', 'q4_1', 'iq4_nl', 'q5_0', 'q5_1'];
+
+    for (const id of ['cacheTypeK', 'cacheTypeV', 'specDraftTypeK', 'specDraftTypeV']) {
+        assert.equal(registry.byId.get(id).value.type, 'choice', id);
+        assert.deepEqual(optionValues(id), cacheTypes, id);
+    }
+    for (const id of [
+        'cpuStrict', 'cpuStrictBatch', 'pollBatch', 'specDraftCpuStrict',
+        'specDraftPoll', 'specDraftCpuStrictBatch', 'specDraftPollBatch'
+    ]) {
+        assert.equal(registry.byId.get(id).value.type, 'choice', id);
+        assert.deepEqual(optionValues(id), ['', '0', '1'], id);
+    }
+
+    assert.deepEqual(optionValues('numa'), ['', 'distribute', 'isolate', 'numactl']);
+    assert.deepEqual(optionValues('reasoningFormat'), ['', 'auto', 'none', 'deepseek', 'deepseek-legacy']);
+});
+
+test('combination and ordered-list parameters remain editable text', () => {
+    const registry = createRegistry(data);
+    for (const id of ['specType', 'tools', 'samplers', 'samplerSeq', 'chatTemplate']) {
+        assert.equal(registry.byId.get(id).value.type, 'string', id);
     }
 });
 

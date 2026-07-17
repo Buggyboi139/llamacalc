@@ -85,6 +85,16 @@ class FakeElement {
     addEventListener(name, callback) {
         this.listeners[name] = callback;
     }
+
+    focus() {
+        this.focused = true;
+    }
+
+    setSelectionRange(start, end, direction) {
+        this.selectionStart = start;
+        this.selectionEnd = end;
+        this.selectionDirection = direction;
+    }
 }
 
 const fakeDocument = {
@@ -143,6 +153,60 @@ test('renderer search results reuse canonical flag state keys', () => {
     assert.ok(descendants(container.children[0]).some(element => element.dataset.flagId === 'flashAttn'));
 });
 
+test('renderer restores active field focus and cursor after rerender', () => {
+    const { captureFieldFocus, restoreFieldFocus } = require('../lib/render');
+    const active = new FakeElement('input');
+    active.dataset.flagId = 'ctxSize';
+    active.selectionStart = 2;
+    active.selectionEnd = 2;
+    active.selectionDirection = 'none';
+    const replacement = new FakeElement('input');
+    const document = {
+        activeElement: active,
+        getElementById(id) {
+            return id === 'field-ctxSize' ? replacement : null;
+        }
+    };
+
+    const snapshot = captureFieldFocus(document);
+    restoreFieldFocus(document, snapshot);
+
+    assert.equal(replacement.focused, true);
+    assert.equal(replacement.selectionStart, 2);
+    assert.equal(replacement.selectionEnd, 2);
+});
+
+test('category navigation anchors the workspace below the sticky header', () => {
+    const { scrollToFlagWorkspace } = require('../lib/render');
+    let options = null;
+    const document = {
+        getElementById(id) {
+            if (id !== 'flagWorkspace') return null;
+            return { scrollIntoView(nextOptions) { options = nextOptions; } };
+        }
+    };
+
+    scrollToFlagWorkspace(document);
+
+    assert.deepEqual(options, { behavior: 'auto', block: 'start' });
+    assert.match(readStyles(), /\.flag-workspace\s*\{[^}]*scroll-margin-top:\s*var\(--sticky-offset\)/s);
+    assert.match(readStyles(), /html\s*\{\s*min-width:\s*20rem;\s*scroll-behavior:\s*auto/s);
+});
+
+test('DFlash builder field appears in Essentials and Speculative decoding', () => {
+    const { fieldsForCategory } = require('../lib/render');
+    const dflash = {
+        id: 'dflashModel',
+        category: 'speculative',
+        featured: true,
+        modes: ['cli', 'server']
+    };
+    const registry = { fields: [dflash] };
+
+    assert.deepEqual(fieldsForCategory(registry, 'server', 'essentials'), [dflash]);
+    assert.deepEqual(fieldsForCategory(registry, 'server', 'speculative'), [dflash]);
+});
+
 test('cosmic styles expose the approved visual and accessibility tokens', () => {
     const css = readStyles();
     for (const token of ['--neutral-primary-soft', '--signal-cyan', '--signal-violet', '--focus-ring']) {
@@ -161,12 +225,11 @@ test('responsive workbench children can shrink without page overflow', () => {
     assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?h1\s*\{[^}]*font-size:\s*1\.7rem/);
 });
 
-test('legacy split catalogue and unsupported DFlash code are removed', () => {
+test('legacy split catalogue files are removed', () => {
     for (const file of ['command-rules.js', 'script.js', 'starter-fields.js', 'starter-fields.css', 'test/dflash.test.js']) {
         assert.equal(fs.existsSync(path.join(root, file)), false, file);
     }
     const allRuntime = ['index.html', 'app.js', ...fs.readdirSync(path.join(root, 'lib')).map(file => `lib/${file}`)]
         .map(file => fs.readFileSync(path.join(root, file), 'utf8'))
         .join('\n');
-    assert.doesNotMatch(allRuntime, /DFlash|draft-dflash|dflashModel/);
 });

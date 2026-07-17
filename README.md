@@ -8,6 +8,8 @@ LlamaCalc is a fully static command workbench for current `llama-cli` and `llama
 - Linux and macOS Bash/Zsh output
 - Windows PowerShell and Windows Command Prompt output
 - One global search across flag names, aliases, labels, categories, and descriptions
+- A DFlash shortcut that emits the current `-md` and `--spec-type draft-dflash` arguments
+- Dropdowns for every finite single-choice parameter documented by current llama.cpp help
 - A single JSON flag registry with current option metadata and focused help text
 - Browser-local builder state and benchmark logs
 - No backend, accounts, cookies, tracking, analytics, or runtime service
@@ -66,7 +68,7 @@ node scripts/audit-flags.js \
   --server /path/to/llama.cpp/tools/server/README.md
 ```
 
-The audit fails when documented option rows are missing from `flags.json` or registry aliases no longer appear in the selected CLI/server help.
+The audit fails when documented option rows are missing from `flags.json` or registry aliases no longer appear in the selected CLI/server help. DFlash support is additionally checked against `docs/speculative.md`, where `draft-dflash` is documented as a current speculative type rather than a standalone flag.
 
 ## Updating llama.cpp flags
 

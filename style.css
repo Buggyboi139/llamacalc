@@ -89,7 +89,7 @@
 
 html {
     min-width: 20rem;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     background: var(--neutral-primary-soft);
 }
 
@@ -603,6 +603,7 @@ a:hover {
 
 .flag-workspace {
     min-width: 0;
+    scroll-margin-top: var(--sticky-offset);
 }
 
 .workspace-heading,

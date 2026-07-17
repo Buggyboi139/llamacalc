@@ -68,7 +68,10 @@ const special = new Map([
 
 const manualIds = new Set([
     'offline', 'logColors', 'logPromptsDir', 'mediaInput', 'modelVocoder',
-    'uiMcpProxy', 'agent', 'ssePingInterval', 'slotPromptSimilarity'
+    'uiMcpProxy', 'agent', 'ssePingInterval', 'slotPromptSimilarity', 'poll',
+    'cpuStrict', 'cpuStrictBatch', 'pollBatch', 'cacheTypeK', 'cacheTypeV', 'numa',
+    'reasoningFormat', 'specDraftTypeK', 'specDraftTypeV', 'specDraftCpuStrict',
+    'specDraftPoll', 'specDraftCpuStrictBatch', 'specDraftPollBatch'
 ]);
 
 const featuredIds = new Set([
@@ -307,6 +310,7 @@ const flags = groups.sort((a, b) => a.order - b.order).map(group => {
     ]).get(canonical);
     if (sourcePriority) record.sourcePriority = sourcePriority;
     if (canonical === '--port') record.validation = { integer: true, min: 1, max: 65535 };
+    if (manual?.validation) record.validation = manual.validation;
     if (isSecret(canonical)) record.secret = true;
     if (group.rows.some(row => /DEPRECATED/i.test(row.explanation))) record.deprecated = true;
     if (group.rows.some(row => /experimental/i.test(row.explanation))) record.experimental = true;
@@ -315,29 +319,7 @@ const flags = groups.sort((a, b) => a.order - b.order).map(group => {
 
 const output = {
     ...current,
-    fields: [
-        {
-            id: 'serverPath',
-            label: 'Server executable',
-            modes: ['server'],
-            value: { type: 'string' },
-            description: 'Sets the path to the llama-server executable. Leave it empty to use the default path for the selected operating system.'
-        },
-        {
-            id: 'cliPath',
-            label: 'CLI executable',
-            modes: ['cli'],
-            value: { type: 'string' },
-            description: 'Sets the path to the llama-cli executable. Leave it empty to use the default path for the selected operating system.'
-        },
-        {
-            id: 'extraFlags',
-            label: 'Extra flags appended verbatim',
-            modes: ['cli', 'server'],
-            value: { type: 'textarea' },
-            description: 'Appends non-empty lines exactly as written after all registered options. Raw text is not validated or translated between shell families, so verify it after switching operating systems.'
-        }
-    ],
+    fields: current.fields,
     flags
 };
 

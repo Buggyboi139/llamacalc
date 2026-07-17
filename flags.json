@@ -21,6 +21,104 @@
       "server": ".\\llama.cpp\\build\\bin\\Release\\llama-server.exe"
     }
   },
+  "optionSets": {
+    "binary": [
+      {
+        "value": "",
+        "label": "Unset"
+      },
+      {
+        "value": "0",
+        "label": "Disabled (0)"
+      },
+      {
+        "value": "1",
+        "label": "Enabled (1)"
+      }
+    ],
+    "cacheTypes": [
+      {
+        "value": "",
+        "label": "Unset"
+      },
+      {
+        "value": "f32",
+        "label": "f32"
+      },
+      {
+        "value": "f16",
+        "label": "f16"
+      },
+      {
+        "value": "bf16",
+        "label": "bf16"
+      },
+      {
+        "value": "q8_0",
+        "label": "q8_0"
+      },
+      {
+        "value": "q4_0",
+        "label": "q4_0"
+      },
+      {
+        "value": "q4_1",
+        "label": "q4_1"
+      },
+      {
+        "value": "iq4_nl",
+        "label": "iq4_nl"
+      },
+      {
+        "value": "q5_0",
+        "label": "q5_0"
+      },
+      {
+        "value": "q5_1",
+        "label": "q5_1"
+      }
+    ],
+    "numa": [
+      {
+        "value": "",
+        "label": "Unset"
+      },
+      {
+        "value": "distribute",
+        "label": "Distribute"
+      },
+      {
+        "value": "isolate",
+        "label": "Isolate"
+      },
+      {
+        "value": "numactl",
+        "label": "numactl"
+      }
+    ],
+    "reasoningFormat": [
+      {
+        "value": "",
+        "label": "Unset"
+      },
+      {
+        "value": "auto",
+        "label": "Auto"
+      },
+      {
+        "value": "none",
+        "label": "None"
+      },
+      {
+        "value": "deepseek",
+        "label": "DeepSeek"
+      },
+      {
+        "value": "deepseek-legacy",
+        "label": "DeepSeek legacy"
+      }
+    ]
+  },
   "categories": [
     {
       "id": "model",
@@ -254,7 +352,8 @@
       "canonical": "--cpu-strict",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses strict CPU placement. Leave it unset to keep the upstream runtime default, or set it when the workload needs an explicit override.",
       "serialization": {
@@ -292,12 +391,17 @@
       "canonical": "--poll",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "integer"
       },
       "description": "Uses polling level to wait for work (0 - no polling, default: 50). Leave it unset to keep the upstream runtime default, or set it when the workload needs an explicit override.",
       "serialization": {
         "emit": "pair",
         "preferredAlias": "--poll"
+      },
+      "validation": {
+        "integer": true,
+        "min": 0,
+        "max": 100
       }
     },
     {
@@ -353,7 +457,8 @@
       "canonical": "--cpu-strict-batch",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses strict CPU placement. Leave it unset to keep the upstream runtime default, or set it when the workload needs an explicit override.",
       "serialization": {
@@ -391,7 +496,8 @@
       "canonical": "--poll-batch",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses polling to wait for work. Leave it unset to keep the upstream runtime default, or set it when the workload needs an explicit override.",
       "serialization": {
@@ -1005,7 +1111,8 @@
         "-ctk"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "cacheTypes"
       },
       "description": "KV cache data type for K. Use it when tuning model loading, cache use, or memory pressure for the target system.",
       "serialization": {
@@ -1027,7 +1134,8 @@
         "-ctv"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "cacheTypes"
       },
       "description": "KV cache data type for V. Use it when tuning model loading, cache use, or memory pressure for the target system.",
       "serialization": {
@@ -1188,7 +1296,8 @@
       "canonical": "--numa",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "numa"
       },
       "description": "Attempt optimizations that help on some NUMA systems. Leave it unset to keep the upstream runtime default, or set it when the workload needs an explicit override.",
       "serialization": {
@@ -2060,7 +2169,8 @@
         "--cache-type-k-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "cacheTypes"
       },
       "description": "KV cache data type for K for the draft model. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -2082,7 +2192,8 @@
         "--cache-type-v-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "cacheTypes"
       },
       "description": "KV cache data type for V for the draft model. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -3411,9 +3522,10 @@
       "canonical": "--reasoning-format",
       "aliases": [],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "reasoningFormat"
       },
-      "description": "Controls whether thought tags are allowed and/or extracted from the response, and in which format they're returned; one of:. Use it when the prompt, chat template, or interactive behavior needs an explicit command-line setting.",
+      "description": "Controls whether thought tags are returned automatically, left unparsed, or extracted in a DeepSeek-compatible format. Use it when the prompt, chat template, or API response needs an explicit reasoning representation.",
       "serialization": {
         "emit": "pair",
         "preferredAlias": "--reasoning-format"
@@ -3734,7 +3846,8 @@
         "--cpu-strict-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses strict CPU placement for draft model. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -3776,7 +3889,8 @@
         "--poll-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses polling to wait for draft model work. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -3819,7 +3933,8 @@
         "--cpu-strict-batch-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses strict CPU placement for draft model. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -3861,7 +3976,8 @@
         "--poll-batch-draft"
       ],
       "value": {
-        "type": "string"
+        "type": "choice",
+        "optionsRef": "binary"
       },
       "description": "Uses polling to wait for draft model work. Tune it only when speculative decoding is enabled and the draft strategy requires an explicit override.",
       "serialization": {
@@ -5753,6 +5869,25 @@
         "type": "string"
       },
       "description": "Sets the path to the llama-cli executable. Leave it empty to use the default path for the selected operating system."
+    },
+    {
+      "id": "dflashModel",
+      "label": "DFlash model path",
+      "category": "speculative",
+      "featured": true,
+      "modes": [
+        "cli",
+        "server"
+      ],
+      "aliases": [
+        "DFlash",
+        "draft-dflash"
+      ],
+      "value": {
+        "type": "string",
+        "placeholder": "/models/model-DFlash.gguf"
+      },
+      "description": "Selects a DFlash draft GGUF with -md and automatically sets --spec-type draft-dflash. It overrides the generic Draft model path and Spec type fields so the command never emits duplicates."
     },
     {
       "id": "extraFlags",

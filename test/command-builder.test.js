@@ -87,3 +87,22 @@ test('explicit executable paths override platform defaults', () => {
     const state = makeState({ serverPath: '/opt/llama server' }, { mode: 'server', platform: 'macos' });
     assert.equal(buildArguments(registry, state, validateState(registry, state)).executable, '/opt/llama server');
 });
+
+test('DFlash shortcut emits one draft model and automatic speculative type', () => {
+    const state = makeState({ dflashModel: '/models/DFlash model.gguf' });
+    const model = buildArguments(registry, state, validateState(registry, state));
+
+    assert.deepEqual(values(model), ['-md', '/models/DFlash model.gguf', '--spec-type', 'draft-dflash']);
+});
+
+test('DFlash overrides generic speculative fields with one warning', () => {
+    const state = makeState({
+        dflashModel: '/models/dflash.gguf',
+        specDraftModel: '/models/generic.gguf',
+        specType: 'draft-mtp'
+    });
+    const model = buildArguments(registry, state, validateState(registry, state));
+
+    assert.deepEqual(values(model), ['-md', '/models/dflash.gguf', '--spec-type', 'draft-dflash']);
+    assert.equal(model.warnings.filter(warning => warning.id === 'dflash-override').length, 1);
+});

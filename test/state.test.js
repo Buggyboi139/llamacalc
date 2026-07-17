@@ -28,9 +28,10 @@ test('default state contains UI defaults and every current field', () => {
     assert.equal(state.values.ctxSize, '');
     assert.equal(state.values.serverPath, '');
     assert.equal(state.values.extraFlags, '');
+    assert.equal(state.values.dflashModel, '');
 });
 
-test('loads legacy values, supplies platform defaults, and drops stale keys', () => {
+test('loads legacy values, supplies platform defaults, and preserves DFlash', () => {
     const storage = memoryStorage({
         [STATE_KEY]: JSON.stringify({
             mode: 'cli',
@@ -47,7 +48,7 @@ test('loads legacy values, supplies platform defaults, and drops stale keys', ()
     assert.equal(state.windowsShell, 'powershell');
     assert.equal(state.multiline, false);
     assert.equal(state.values.ctxSize, '8192');
-    assert.equal('dflashModel' in state.values, false);
+    assert.equal(state.values.dflashModel, '/old.gguf');
 });
 
 test('never loads or persists registry-marked secrets', () => {
