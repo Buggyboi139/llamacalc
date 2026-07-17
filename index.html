@@ -1,292 +1,160 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Llama Command Bench</title>
-    <link rel="stylesheet" href="style.css">\
-    <link rel="stylesheet" href="starter-fields.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Build current llama-cli and llama-server commands entirely in your browser.">
+    <title>LlamaCalc — llama.cpp command workbench</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="toast-container"></div>
-    <div id="left-color-bar"></div>
+    <a class="skip-link" href="#flagWorkspace">Skip to flags</a>
 
-    <nav>
-        <div class="logo-container">
-            <span class="logo-text">Llama Command Bench</span>
-            <span class="logo-subtitle">Linux llama.cpp CLI and server builder</span>
+    <header class="app-header">
+        <div class="brand-block" aria-label="LlamaCalc">
+            <span class="brand-mark" aria-hidden="true">LC</span>
+            <span>
+                <strong>LlamaCalc</strong>
+                <small>llama.cpp command workbench</small>
+            </span>
         </div>
-        <div class="nav-actions">
-            <button id="resetBuilderBtn" class="ghost-button">Reset Builder</button>
-            <button id="clearLogsBtn" class="danger-button">Clear Logs</button>
+
+        <div class="header-search">
+            <label for="flagSearch">Search every flag</label>
+            <div class="search-control">
+                <span aria-hidden="true">⌕</span>
+                <input id="flagSearch" type="search" autocomplete="off" spellcheck="false"
+                    placeholder="Flag, alias, category, or description…" aria-controls="flagWorkspace">
+                <kbd aria-hidden="true">/</kbd>
+            </div>
         </div>
-    </nav>
 
-    <main class="container">
-        <section class="hero-card">
-            <div>
-                <p class="eyebrow">No accounts, no cookies, no tracking.</p>
-                <h1>Build the command. Run the Benchmarks. Print the log.</h1>
-                <p class="hero-copy">A static Linux only (for now) command builder for llama.cpp. Empty fields are ignored, raw flags are appended verbatim, and browser storage only keeps your last builder state and benchmark logs.</p>
-            </div>
-            <div class="mode-card">
-                <label class="mode-option"><input type="radio" name="mode" value="server" checked><span>Server</span></label>
-                <label class="mode-option"><input type="radio" name="mode" value="cli"><span>CLI</span></label>
-            </div>
-        </section>
+        <div class="header-actions">
+            <button id="resetBuilderBtn" class="button button-quiet" type="button">Reset builder</button>
+            <button id="jumpToBenchmarksBtn" class="button button-quiet" type="button">Benchmarks</button>
+        </div>
+    </header>
 
-        <section class="command-card">
-            <div class="command-toolbar">
+    <section class="control-deck" aria-label="Command target">
+        <fieldset id="modeSelector" class="segmented-control">
+            <legend>Tool</legend>
+            <label><input type="radio" name="mode" value="server" checked><span>Server</span></label>
+            <label><input type="radio" name="mode" value="cli"><span>CLI</span></label>
+        </fieldset>
+
+        <fieldset id="platformSelector" class="segmented-control">
+            <legend>Operating system</legend>
+            <label><input type="radio" name="platform" value="linux" checked><span>Linux</span></label>
+            <label><input type="radio" name="platform" value="macos"><span>macOS</span></label>
+            <label><input type="radio" name="platform" value="windows"><span>Windows</span></label>
+        </fieldset>
+
+        <fieldset id="windowsShellSelector" class="segmented-control shell-selector" hidden disabled>
+            <legend>Windows shell</legend>
+            <label><input type="radio" name="windowsShell" value="powershell" checked><span>PowerShell</span></label>
+            <label><input type="radio" name="windowsShell" value="cmd"><span>Command Prompt</span></label>
+        </fieldset>
+    </section>
+
+    <div id="loadError" class="load-error" role="alert" hidden></div>
+
+    <main class="workbench-shell">
+        <nav class="category-rail" aria-label="Flag categories">
+            <div class="rail-heading">
+                <span>Flag groups</span>
+                <small id="configuredTotal">0 configured</small>
+            </div>
+            <div id="categoryNav"></div>
+        </nav>
+
+        <section id="flagWorkspace" class="flag-workspace" aria-labelledby="workspaceHeading">
+            <div class="workspace-heading">
                 <div>
-                    <h2 class="tooltip-heading" data-tooltip="This is the exact Linux command built from the fields below.">Generated Command</h2>
-                    <p id="commandModeLabel">llama-server</p>
+                    <p class="eyebrow" id="workspaceEyebrow">Essentials</p>
+                    <h1 id="workspaceHeading">Configure your command</h1>
+                    <p id="workspaceSummary">Frequently used options for the selected llama.cpp tool.</p>
                 </div>
-                <div class="toolbar-actions">
-                    <label class="toggle-inline"><input type="checkbox" id="multilineCheck" checked><span>Multiline</span></label>
-                    <button id="copyCommandBtn" class="copy-button">Copy Command</button>
-                </div>
+                <output id="resultCount" aria-live="polite"></output>
             </div>
-            <pre id="commandOutput"></pre>
-            <div id="warningList" class="warning-list"></div>
+            <div id="flagList" class="flag-list"></div>
+            <div id="emptyResults" class="empty-results" hidden>
+                <strong>No matching flags</strong>
+                <p>Try a flag alias, category, or a broader description.</p>
+                <button id="clearSearchBtn" class="button button-quiet" type="button">Clear search</button>
+            </div>
         </section>
 
-        <section class="main-card">
-            <div class="main-header">
+        <aside class="command-panel" aria-labelledby="commandHeading">
+            <div class="command-heading">
                 <div>
-                    <h2 class="tooltip-heading" data-tooltip="These are the fields most people change for normal runs.">Main Controls</h2>
-                    <p>Most-used flags for normal server and CLI runs. Everything else is buried in Advanced, where it can think about what it did.</p>
+                    <p class="eyebrow" id="commandPlatformLabel">Linux · Bash/Zsh</p>
+                    <h2 id="commandHeading">Generated command</h2>
                 </div>
+                <label class="switch-control">
+                    <input id="multilineCheck" type="checkbox" checked>
+                    <span>Multiline</span>
+                </label>
             </div>
-            <div id="mainMount" class="input-grid main-grid"></div>
-        </section>
-
-        <details class="advanced-panel">
-            <summary data-tooltip="Open this when you need less common llama.cpp flags.">
-                <span>Advanced</span>
-                <small>GPU split, cache details, long context, sampling, server endpoints, speculative decoding, MTP, adapters, logging, and raw flags</small>
-            </summary>
-            <section id="builderMount" class="builder-grid"></section>
-        </details>
-
-        <section class="log-card">
-            <div class="log-header">
-                <div>
-                    <h2 class="tooltip-heading" data-tooltip="Save real benchmark results here after running a command.">Benchmark Log</h2>
-                    <p>Paste llama.cpp timing output, log the command, then compare real runs instead of worshipping fake estimates.</p>
-                </div>
-                <div class="toolbar-actions">
-                    <button id="copyMarkdownBtn" class="copy-button">Copy Markdown</button>
-                    <button id="copyCsvBtn" class="copy-button">Copy CSV</button>
-                </div>
-            </div>
-            <div class="log-input-grid">
-                <div class="input-group wide"><label for="timingPaste">Timing Output Parser</label><textarea id="timingPaste" rows="6" placeholder="Paste llama.cpp timing output or server JSON timings here"></textarea></div>
-                <div class="input-group"><label for="logName">Run Name</label><input type="text" id="logName" placeholder="Qwen3 30B, 64k, Vulkan"></div>
-                <div class="input-group"><label for="logBuild">llama.cpp Build</label><input type="text" id="logBuild" placeholder="commit, tag, or build notes"></div>
-                <div class="input-group"><label for="logPromptTps">Prompt t/s</label><input type="text" id="logPromptTps"></div>
-                <div class="input-group"><label for="logGenTps">Generation t/s</label><input type="text" id="logGenTps"></div>
-                <div class="input-group"><label for="logPromptTokens">Prompt Tokens</label><input type="text" id="logPromptTokens"></div>
-                <div class="input-group"><label for="logGenTokens">Generated Tokens</label><input type="text" id="logGenTokens"></div>
-                <div class="input-group"><label for="logTotalMs">Total ms</label><input type="text" id="logTotalMs"></div>
-                <div class="input-group wide"><label for="logNotes">Notes</label><textarea id="logNotes" rows="3" placeholder="Driver, backend, model quirks, exact run context, or whatever else future-you will wish present-you had written down."></textarea></div>
-            </div>
-            <div class="log-actions">
-                <button id="parseTimingBtn" class="copy-button">Parse Timing Output</button>
-                <button id="logRunBtn" class="copy-button success-button">Log Current Command</button>
-            </div>
-            <div class="table-wrap"><table><thead><tr><th>Date</th><th>Name</th><th>Mode</th><th>Prompt t/s</th><th>Gen t/s</th><th>Tokens</th><th>Build</th><th>Actions</th></tr></thead><tbody id="logTable"></tbody></table></div>
-        </section>
+            <pre id="commandOutput" tabindex="0" aria-label="Generated llama.cpp command"></pre>
+            <button id="copyCommandBtn" class="button button-primary command-copy" type="button">Copy command</button>
+            <div id="warningList" class="warning-list" aria-label="Command warnings"></div>
+            <p class="privacy-note">Built locally. No accounts, tracking, or network service.</p>
+        </aside>
     </main>
 
-    <script src="command-rules.js"></script>
-    <script src="script.js"></script>
-    <script>
-        (() => {
-            const opt = {
-                yesNo: [['','Unset'],['yes','Emit enabled flag'],['no','Emit disabled flag']],
-                onOff: [['','Unset'],['on','on'],['off','off']],
-                auto: [['','Unset'],['auto','auto'],['on','on'],['off','off']],
-                bin: [['','Unset'],['0','0'],['1','1']],
-                prio: [['','Unset'],['-1','Low'],['0','Normal'],['1','Medium'],['2','High'],['3','Realtime']],
-                cache: [['','Unset'],['f32','f32'],['f16','f16'],['bf16','bf16'],['q8_0','q8_0'],['q4_0','q4_0'],['q4_1','q4_1'],['iq4_nl','iq4_nl'],['q5_0','q5_0'],['q5_1','q5_1']]
-            };
-            const add = (sectionId, fields) => {
-                const section = SECTIONS.find(s => s.id === sectionId);
-                if (section) section.fields.push(...fields);
-            };
-            const insertBefore = (beforeId, section) => {
-                const i = SECTIONS.findIndex(s => s.id === beforeId);
-                if (i >= 0 && !SECTIONS.some(s => s.id === section.id)) SECTIONS.splice(i, 0, section);
-            };
-            const missing = id => !F().some(f => f.id === id);
-            const onlyNew = fields => fields.filter(f => missing(f[0]));
+    <section id="benchmarkLog" class="benchmark-section" aria-labelledby="benchmarkHeading">
+        <div class="benchmark-heading">
+            <div>
+                <p class="eyebrow">Local run history</p>
+                <h2 id="benchmarkHeading">Benchmark log</h2>
+                <p>Parse llama.cpp timing output and keep comparable runs in browser storage.</p>
+            </div>
+            <div class="button-row">
+                <button id="copyMarkdownBtn" class="button button-quiet" type="button">Copy Markdown</button>
+                <button id="copyCsvBtn" class="button button-quiet" type="button">Copy CSV</button>
+                <button id="clearLogsBtn" class="button button-danger" type="button">Clear logs</button>
+            </div>
+        </div>
 
-            add('core', onlyNew([
-                ['imageInput','Image input','text','--image',{p:'image.png'}],
-                ['audioInput','Audio input','text','--audio',{p:'audio.wav'}],
-                ['imageMinTokens','Image min tokens','number','--image-min-tokens',{raw:1}],
-                ['imageMaxTokens','Image max tokens','number','--image-max-tokens',{raw:1}]
-            ]));
-            add('runtime', onlyNew([
-                ['poll','Poll level','number','--poll',{raw:1,p:'0-100'}],
-                ['prioBatch','Batch priority','select','--prio-batch',{raw:1,o:opt.prio}],
-                ['pollBatch','Poll batch','select','--poll-batch',{raw:1,o:opt.bin}],
-                ['ctxCheckpoints','Context checkpoints','number','--ctx-checkpoints',{raw:1}],
-                ['checkpointMinStep','Checkpoint min step','number','--checkpoint-min-step',{raw:1}]
-            ]));
-            add('gpu', onlyNew([
-                ['rpc','RPC servers','text','--rpc',{raw:1,p:'host1:50052,host2:50052'}],
-                ['fitPrint','Fit print','select','-fitp',{raw:1,o:opt.onOff}]
-            ]));
-            insertBefore('sampling', {id:'longContext',title:'RoPE, YaRN, and long context',summary:'RoPE scaling, YaRN tuning, and grouped attention controls for long-context experiments.',fields:[
-                ['ropeScaling','RoPE scaling','select','--rope-scaling',{raw:1,o:[['','Unset'],['none','none'],['linear','linear'],['yarn','yarn']]}],
-                ['ropeScale','RoPE scale','number','--rope-scale',{raw:1,step:'0.01'}],
-                ['ropeFreqBase','RoPE freq base','number','--rope-freq-base',{raw:1,step:'0.01'}],
-                ['ropeFreqScale','RoPE freq scale','number','--rope-freq-scale',{raw:1,step:'0.01'}],
-                ['yarnOrigCtx','YaRN original ctx','number','--yarn-orig-ctx',{raw:1}],
-                ['yarnExtFactor','YaRN ext factor','number','--yarn-ext-factor',{raw:1,step:'0.01'}],
-                ['yarnAttnFactor','YaRN attn factor','number','--yarn-attn-factor',{raw:1,step:'0.01'}],
-                ['yarnBetaSlow','YaRN beta slow','number','--yarn-beta-slow',{raw:1,step:'0.01'}],
-                ['yarnBetaFast','YaRN beta fast','number','--yarn-beta-fast',{raw:1,step:'0.01'}],
-                ['grpAttnN','Group attention N','number','-gan',{raw:1}],
-                ['grpAttnW','Group attention W','number','-gaw',{raw:1}]
-            ]});
-            add('chat', onlyNew([
-                ['systemPromptFile','System prompt file','text','--system-prompt-file',{m:['cli']}],
-                ['binaryFile','Binary file','text','--binary-file',{m:['cli']}],
-                ['printTokenCount','Print token count','number','--print-token-count',{m:['cli'],raw:1}],
-                ['interactiveFirst','Interactive first','checkbox','--interactive-first',{m:['cli']}],
-                ['multilineInput','Multiline input','checkbox','--multiline-input',{m:['cli']}],
-                ['inPrefixBos','Input prefix BOS','checkbox','--in-prefix-bos',{m:['cli']}],
-                ['inPrefix','Input prefix','text','--in-prefix',{m:['cli']}],
-                ['inSuffix','Input suffix','text','--in-suffix',{m:['cli']}]
-            ]));
-            add('server', onlyNew([
-                ['reusePort','Reuse port','checkbox','--reuse-port',{m:['server']}],
-                ['staticPath','Static path','text','--path',{m:['server'],raw:1}],
-                ['embdNormalize','Embedding normalize','number','--embd-normalize',{m:['server'],raw:1}]
-            ]));
-            add('speculative', onlyNew([
-                ['specDraftCpuMask','Draft CPU mask','text','--spec-draft-cpu-mask',{raw:1}],
-                ['specDraftCpuRange','Draft CPU range','text','--spec-draft-cpu-range',{raw:1}],
-                ['specDraftCpuStrict','Draft CPU strict','select','--spec-draft-cpu-strict',{raw:1,o:opt.bin}],
-                ['specDraftPrio','Draft priority','select','--spec-draft-prio',{raw:1,o:opt.prio}],
-                ['specDraftPoll','Draft poll','select','--spec-draft-poll',{raw:1,o:opt.bin}],
-                ['specDraftCpuMaskBatch','Draft CPU mask batch','text','--spec-draft-cpu-mask-batch',{raw:1}],
-                ['specDraftCpuRangeBatch','Draft CPU range batch','text','--spec-draft-cpu-range-batch',{raw:1}],
-                ['specDraftCpuStrictBatch','Draft CPU strict batch','select','--spec-draft-cpu-strict-batch',{raw:1,o:opt.bin}],
-                ['specDraftPrioBatch','Draft priority batch','select','--spec-draft-prio-batch',{raw:1,o:opt.prio}],
-                ['specDraftPollBatch','Draft poll batch','select','--spec-draft-poll-batch',{raw:1,o:opt.bin}],
-                ['specDraftTypeK','Draft cache type K','select','--spec-draft-type-k',{raw:1,o:opt.cache}],
-                ['specDraftTypeV','Draft cache type V','select','--spec-draft-type-v',{raw:1,o:opt.cache}],
-                ['specDraftOverrideTensor','Draft override tensor','text','--spec-draft-override-tensor',{}],
-                ['specNgramMapKSizeN','Ngram map-k size N','number','--spec-ngram-map-k-size-n',{raw:1}],
-                ['specNgramMapKSizeM','Ngram map-k size M','number','--spec-ngram-map-k-size-m',{raw:1}],
-                ['specNgramMapKMinHits','Ngram map-k min hits','number','--spec-ngram-map-k-min-hits',{raw:1}],
-                ['specNgramMapK4vSizeN','Ngram map-k4v size N','number','--spec-ngram-map-k4v-size-n',{raw:1}],
-                ['specNgramMapK4vSizeM','Ngram map-k4v size M','number','--spec-ngram-map-k4v-size-m',{raw:1}],
-                ['specNgramMapK4vMinHits','Ngram map-k4v min hits','number','--spec-ngram-map-k4v-min-hits',{raw:1}]
-            ]));
-            add('output', onlyNew([
-                ['cacheList','Cache list and exit','checkbox','--cache-list',{}],
-                ['verbosePrompt','Verbose prompt','checkbox','--verbose-prompt',{m:['cli']}],
-                ['color','Color output','checkbox','--color',{m:['cli']}],
-                ['displayPrompt','Display prompt','select',null,{m:['cli'],o:opt.yesNo,map:{yes:'--display-prompt',no:'--no-display-prompt'}}]
-            ]));
+        <div class="benchmark-entry">
+            <div class="field-block field-wide">
+                <label for="timingPaste">Timing output</label>
+                <textarea id="timingPaste" rows="6" placeholder="Paste llama.cpp timing output or server JSON timings"></textarea>
+            </div>
+            <div class="field-block"><label for="logName">Run name</label><input id="logName" type="text" placeholder="Qwen3 30B · 64k"></div>
+            <div class="field-block"><label for="logBuild">llama.cpp build</label><input id="logBuild" type="text" placeholder="Commit, tag, or notes"></div>
+            <div class="field-block"><label for="logPromptTps">Prompt t/s</label><input id="logPromptTps" type="text" inputmode="decimal"></div>
+            <div class="field-block"><label for="logGenTps">Generation t/s</label><input id="logGenTps" type="text" inputmode="decimal"></div>
+            <div class="field-block"><label for="logPromptTokens">Prompt tokens</label><input id="logPromptTokens" type="text" inputmode="numeric"></div>
+            <div class="field-block"><label for="logGenTokens">Generated tokens</label><input id="logGenTokens" type="text" inputmode="numeric"></div>
+            <div class="field-block"><label for="logTotalMs">Total ms</label><input id="logTotalMs" type="text" inputmode="decimal"></div>
+            <div class="field-block field-wide"><label for="logNotes">Notes</label><textarea id="logNotes" rows="3" placeholder="Backend, driver, model quirks, or run context"></textarea></div>
+        </div>
+        <div class="button-row benchmark-actions">
+            <button id="parseTimingBtn" class="button button-quiet" type="button">Parse timing output</button>
+            <button id="logRunBtn" class="button button-primary" type="button">Log current command</button>
+        </div>
 
-            const tips = {
-                modelPath:'Path to a local GGUF model file.',ctxSize:'Maximum context window in tokens.',gpuLayers:'Number of model layers to offload to GPU.',flashAttn:'Use flash attention when your backend and model support it.',cacheTypeK:'Precision used for key cache memory.',cacheTypeV:'Precision used for value cache memory.',host:'Network address the server binds to.',port:'TCP port used by the server.',parallel:'Number of server slots that can run in parallel.',ropeScaling:'RoPE scaling mode for long-context use.',rpc:'Comma-separated RPC backend servers.',dflashModel:'Sets a DFlash draft model and automatically enables draft-dflash speculative decoding.',specType:'Speculative decoding mode, including draft-mtp when supported.',mtpRawFlags:'Raw speculative or MTP flags appended exactly as written.',extraFlags:'Raw extra llama.cpp flags appended exactly as written.'
-            };
-            const genericTip = label => `${label.replace(/\?+$/,'')} controls a llama.cpp command option.`;
-            const addTip = (el, text) => {
-                if (!el || !text || el.querySelector('.tip')) return;
-                const tip = document.createElement('span');
-                tip.className = 'tip';
-                tip.tabIndex = 0;
-                tip.setAttribute('aria-label', text);
-                tip.dataset.tooltip = text;
-                tip.textContent = '?';
-                el.appendChild(tip);
-            };
+        <div class="table-wrap">
+            <table>
+                <caption class="visually-hidden">Saved llama.cpp benchmark runs</caption>
+                <thead><tr><th scope="col">Date</th><th scope="col">Run</th><th scope="col">Tool</th><th scope="col">Prompt t/s</th><th scope="col">Gen t/s</th><th scope="col">Tokens</th><th scope="col">Build</th><th scope="col">Actions</th></tr></thead>
+                <tbody id="logTable"></tbody>
+            </table>
+        </div>
+    </section>
 
-            const tooltip = document.createElement('div');
-            tooltip.id = 'tooltip';
-            document.body.appendChild(tooltip);
+    <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+    <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 
-            const hideTooltip = () => {
-                tooltip.classList.remove('visible');
-                tooltip.textContent = '';
-            };
-
-            const showTooltip = el => {
-                const text = el.dataset.tooltip || el.getAttribute('aria-label');
-                if (!text) return;
-
-                tooltip.textContent = text;
-                tooltip.classList.add('visible');
-
-                const margin = 12;
-                const trigger = el.getBoundingClientRect();
-                const box = tooltip.getBoundingClientRect();
-
-                let left = trigger.left + trigger.width / 2 - box.width / 2;
-                left = Math.max(margin, Math.min(left, window.innerWidth - box.width - margin));
-
-                let top = trigger.top - box.height - 10;
-                if (top < margin) top = trigger.bottom + 10;
-                if (top + box.height > window.innerHeight - margin) top = Math.max(margin, window.innerHeight - box.height - margin);
-
-                tooltip.style.left = `${left}px`;
-                tooltip.style.top = `${top}px`;
-            };
-
-            const bindTooltips = () => {
-                document.querySelectorAll('[data-tooltip], .tip[aria-label]').forEach(el => {
-                    el.addEventListener('mouseenter', () => showTooltip(el));
-                    el.addEventListener('mouseleave', hideTooltip);
-                    el.addEventListener('focus', () => showTooltip(el));
-                    el.addEventListener('blur', hideTooltip);
-                    el.addEventListener('touchstart', event => {
-                        event.stopPropagation();
-                        showTooltip(el);
-                    }, {passive:true});
-                });
-            };
-
-            const mainIds = ['serverPath','cliPath','modelPath','hfRepo','hfFile','ctxSize','predict','batchSize','ubatchSize','threads','threadsBatch','gpuLayers','device','flashAttn','cacheTypeK','cacheTypeV','kvOffload','host','port','parallel','prompt','systemPrompt','chatTemplate','reasoning','dflashModel','specType','specDraftModel','mtpRawFlags','extraFlags'];
-
-            renderBuilder();
-            applyState();
-            document.querySelectorAll('[data-key]').forEach(el => { el.addEventListener('input', updateAll); el.addEventListener('change', updateAll); });
-            document.querySelectorAll('input[name="mode"]').forEach(el => el.addEventListener('change', updateAll));
-            const mainMount = document.getElementById('mainMount');
-            mainIds.forEach(id => {
-                const input = document.getElementById(id);
-                const group = input && input.closest('.input-group');
-                if (group) mainMount.appendChild(group);
-            });
-            document.querySelectorAll('#builderMount .flag-section').forEach(section => section.removeAttribute('open'));
-            document.querySelectorAll('label[for]').forEach(label => addTip(label, tips[label.getAttribute('for')] || genericTip(label.textContent.trim())));
-            document.querySelectorAll('button[id]').forEach(button => { if (tips[button.id]) button.dataset.tooltip = tips[button.id]; });
-            document.querySelectorAll('.mode-option').forEach(option => {
-                const input = option.querySelector('input');
-                option.dataset.tooltip = input?.value === 'server' ? 'Build a llama-server command for an API or web server.' : 'Build a llama-cli command for terminal generation.';
-            });
-            document.querySelectorAll('.flag-section summary').forEach(summary => {
-                const note = summary.parentElement.querySelector('.section-summary');
-                if (note) summary.dataset.tooltip = note.textContent.trim();
-            });
-
-            bindTooltips();
-            document.addEventListener('scroll', hideTooltip, true);
-            window.addEventListener('resize', hideTooltip);
-            document.addEventListener('keydown', event => {
-                if (event.key === 'Escape') hideTooltip();
-            });
-            document.addEventListener('touchstart', hideTooltip, {passive:true});
-            updateAll();
-        })();
-    </script>
-    <script src="starter-fields.js"></script>
+    <script src="lib/registry.js" defer></script>
+    <script src="lib/search.js" defer></script>
+    <script src="lib/state.js" defer></script>
+    <script src="lib/validation.js" defer></script>
+    <script src="lib/command-builder.js" defer></script>
+    <script src="lib/serializers.js" defer></script>
+    <script src="lib/benchmarks.js" defer></script>
+    <script src="lib/render.js" defer></script>
+    <script src="app.js" defer></script>
 </body>
 </html>
