@@ -35,6 +35,18 @@ test('mode and operating system are peer radio groups', () => {
     }
 });
 
+test('preset selector is a distinct labeled control between tool and operating system', () => {
+    const html = readIndex();
+    const modeIndex = html.indexOf('id="modeSelector"');
+    const presetIndex = html.indexOf('id="presetSelector"');
+    const platformIndex = html.indexOf('id="platformSelector"');
+
+    assert.match(html, /<label[^>]*for="presetSelector"[^>]*>Preset<\/label>/);
+    assert.match(html, /<select[^>]*id="presetSelector"[^>]*aria-describedby="presetDescription"/);
+    assert.ok(modeIndex < presetIndex && presetIndex < platformIndex);
+    assert.ok(html.indexOf('lib/presets.js') < html.indexOf('lib/render.js'));
+});
+
 test('shell contains workbench and preserved benchmark landmarks', () => {
     const html = readIndex();
     for (const id of ['categoryNav', 'flagWorkspace', 'commandOutput', 'warningList', 'benchmarkLog', 'logTable']) {
@@ -193,18 +205,35 @@ test('category navigation anchors the workspace below the sticky header', () => 
     assert.match(readStyles(), /html\s*\{\s*min-width:\s*20rem;\s*scroll-behavior:\s*auto/s);
 });
 
-test('DFlash builder field appears in Essentials and Speculative decoding', () => {
-    const { fieldsForCategory } = require('../lib/render');
-    const dflash = {
-        id: 'dflashModel',
-        category: 'speculative',
-        featured: true,
-        modes: ['cli', 'server']
-    };
-    const registry = { fields: [dflash] };
+test('preset groups preserve registry order and omit server-only workloads in CLI mode', () => {
+    const { createRegistry } = require('../lib/registry');
+    const { presetGroups } = require('../lib/render');
+    const data = JSON.parse(fs.readFileSync(path.join(root, 'flags.json'), 'utf8'));
+    const registry = createRegistry(data);
 
-    assert.deepEqual(fieldsForCategory(registry, 'server', 'essentials'), [dflash]);
-    assert.deepEqual(fieldsForCategory(registry, 'server', 'speculative'), [dflash]);
+    assert.deepEqual(presetGroups(registry, 'server').map(group => group.label), [
+        'General', 'Speculative', 'Server workloads'
+    ]);
+    assert.deepEqual(presetGroups(registry, 'cli').map(group => group.label), [
+        'General', 'Speculative'
+    ]);
+});
+
+test('Essentials follows the active preset while normal category tabs remain complete', () => {
+    const { createRegistry } = require('../lib/registry');
+    const { itemsForCategory } = require('../lib/render');
+    const data = JSON.parse(fs.readFileSync(path.join(root, 'flags.json'), 'utf8'));
+    const registry = createRegistry(data);
+    const state = { mode: 'server', activeCategory: 'essentials', activePreset: 'dflash' };
+
+    const essentials = itemsForCategory(registry, state).map(field => field.id);
+    assert.ok(essentials.includes('dflashModel'));
+    assert.equal(essentials.includes('prompt'), false);
+
+    state.activeCategory = 'speculative';
+    const speculative = itemsForCategory(registry, state).map(field => field.id);
+    assert.ok(speculative.includes('dflashModel'));
+    assert.ok(speculative.includes('specType'));
 });
 
 test('cosmic styles expose the approved visual and accessibility tokens', () => {

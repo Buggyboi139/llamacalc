@@ -288,6 +288,7 @@ a:hover {
 
 .header-search > label,
 .segmented-control legend,
+.preset-control > label,
 .field-block > label {
     color: var(--heading);
     font-size: 0.7rem;
@@ -425,6 +426,35 @@ a:hover {
     margin: 0;
     padding: 0;
     border: 0;
+}
+
+.preset-control {
+    display: grid;
+    flex: 0 1 18rem;
+    min-width: 13rem;
+    gap: 0.35rem;
+    padding-left: var(--space-2);
+    border-left: 1px solid var(--signal-violet);
+}
+
+.preset-control > label {
+    color: var(--signal-violet);
+}
+
+.preset-control select {
+    min-width: 0;
+    border-color: rgba(167, 139, 250, 0.45);
+    background: var(--surface-violet-soft);
+    box-shadow: var(--shadow-xs), inset 0 -2px rgba(167, 139, 250, 0.3);
+}
+
+.preset-control select:hover:not(:disabled) {
+    border-color: var(--signal-violet);
+}
+
+.preset-control select:focus-visible {
+    border-color: var(--signal-violet);
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2), var(--glow-violet);
 }
 
 .segmented-control legend {
@@ -1225,6 +1255,10 @@ td strong {
         flex: 0 0 auto;
     }
 
+    .preset-control {
+        flex: 0 0 min(18rem, 80vw);
+    }
+
     .shell-selector {
         padding-left: 0;
         border-left: 0;
@@ -1297,6 +1331,10 @@ td strong {
         padding: 0.75rem 1rem;
         border-right: 0;
         border-left: 0;
+    }
+
+    .preset-control {
+        min-width: min(13rem, 75vw);
     }
 
     .workbench-shell {
@@ -1506,6 +1544,10 @@ td strong {
         background: ButtonFace;
         box-shadow: none;
         clip-path: none;
+    }
+
+    .preset-control {
+        border-left-color: CanvasText;
     }
 
     :focus-visible,

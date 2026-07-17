@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('flagSearch');
+    const presetSelector = document.getElementById('presetSelector');
     const loadError = document.getElementById('loadError');
     const benchmarks = LlamaCalcBenchmarks;
     let registry = null;
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         registry = await LlamaCalcRegistry.loadRegistry('flags.json');
         state = LlamaCalcState.loadState(localStorage, registry);
+        LlamaCalcPresets.ensurePresetForMode(registry, state);
         ensureActiveCategory();
         update();
     } catch (error) {
@@ -91,10 +93,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             input.addEventListener('change', event => {
                 if (!state || !event.currentTarget.checked) return;
                 state.mode = event.currentTarget.value;
+                LlamaCalcPresets.ensurePresetForMode(registry, state);
                 ensureActiveCategory();
                 update();
             });
         }
+        presetSelector.addEventListener('change', event => {
+            if (!registry || !state) return;
+            const preset = LlamaCalcPresets.applyPreset(registry, state, event.currentTarget.value);
+            searchQuery = '';
+            searchInput.value = '';
+            update();
+            presetSelector.focus({ preventScroll: true });
+            renderer.announce(`${preset.label} preset applied. Essentials updated.`);
+        });
         for (const input of document.querySelectorAll('input[name="platform"]')) {
             input.addEventListener('change', event => {
                 if (!state || !event.currentTarget.checked) return;

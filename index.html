@@ -46,6 +46,12 @@
             <label><input type="radio" name="mode" value="cli"><span>CLI</span></label>
         </fieldset>
 
+        <div class="preset-control">
+            <label for="presetSelector">Preset</label>
+            <select id="presetSelector" aria-describedby="presetDescription"></select>
+            <span id="presetDescription" class="visually-hidden">Changes Essentials and replaces values owned by the selected recipe.</span>
+        </div>
+
         <fieldset id="platformSelector" class="segmented-control">
             <legend>Operating system</legend>
             <label><input type="radio" name="platform" value="linux" checked><span>Linux</span></label>
@@ -158,6 +164,7 @@
     <script src="lib/command-builder.js" defer></script>
     <script src="lib/serializers.js" defer></script>
     <script src="lib/benchmarks.js" defer></script>
+    <script src="lib/presets.js" defer></script>
     <script src="lib/render.js" defer></script>
     <script src="app.js" defer></script>
 </body>
