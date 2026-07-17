@@ -59,3 +59,12 @@ test('warns that secret fields are not saved', () => {
     const result = validateState(registry, stateWith({ apiKey: 'secret' }));
     assert.match(result.warnings.find(warning => warning.id === 'secret-values').message, /not saved/);
 });
+
+test('warns when Command Prompt will expand a percent-delimited value', () => {
+    const result = validateState(registry, stateWith(
+        { prompt: 'Show %PATH% literally' },
+        { mode: 'cli', platform: 'windows', windowsShell: 'cmd' }
+    ));
+
+    assert.match(result.warnings.find(warning => warning.id === 'cmd-percent-expansion').message, /environment variable/);
+});
