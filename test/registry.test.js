@@ -89,6 +89,16 @@ test('registry includes non-flag builder fields without mixing them into the opt
     assert.match(dflash.description, /draft-dflash/);
 });
 
+test('registry exposes the complete current command preset catalogue', () => {
+    const registry = createRegistry(data);
+    assert.deepEqual(registry.presets.map(preset => preset.id), [
+        'plain', 'multiGpu', 'defaultSpeculative', 'mtp', 'dflash',
+        'draftModel', 'eagle3', 'ngram', 'chatApi', 'embeddings', 'reranking'
+    ]);
+    assert.equal(registry.presetById.get('reranking').modes.join(','), 'server');
+    assert.equal(registry.allById.get('dflashModel').category, 'speculative');
+});
+
 test('DFlash shortcut tracks the current accepted speculative type', () => {
     const documentation = fs.readFileSync('/home/dsmason321/llama.cpp/docs/speculative.md', 'utf8');
     assert.match(documentation, /--spec-type draft-dflash/);

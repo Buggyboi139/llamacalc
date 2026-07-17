@@ -119,6 +119,187 @@
       }
     ]
   },
+  "presets": [
+    {
+      "id": "plain",
+      "label": "Plain",
+      "group": "General",
+      "description": "Builds a standard llama.cpp command without selecting a specialized workload or decoding strategy. It keeps the most common model, runtime, offload, cache, prompt, and listener fields in Essentials.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "predict", "threads", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV",
+        "prompt", "host", "port", "parallel"
+      ],
+      "ownedFieldIds": [],
+      "values": {}
+    },
+    {
+      "id": "multiGpu",
+      "label": "Multi-GPU",
+      "group": "General",
+      "description": "Focuses the controls used to place and split a model across multiple accelerators. It leaves split policy and ratios unset because the correct values depend on the model and available devices.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "batchSize", "ubatchSize", "gpuLayers", "device", "splitMode", "tensorSplit", "mainGpu",
+        "fit", "fitTarget", "fitCtx", "flashAttn", "cacheTypeK", "cacheTypeV"
+      ],
+      "ownedFieldIds": [],
+      "values": {}
+    },
+    {
+      "id": "defaultSpeculative",
+      "label": "Default Speculative",
+      "group": "Speculative",
+      "description": "Enables llama.cpp's current default speculative configuration through --spec-default. It exposes the n-gram-mod controls used by that default without guessing performance values.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specDefault",
+        "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": { "specDefault": true }
+    },
+    {
+      "id": "mtp",
+      "label": "MTP",
+      "group": "Speculative",
+      "description": "Uses Multi Token Prediction heads from the main model through --spec-type draft-mtp. It focuses MTP controls without requesting a separate draft model.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftNMax", "specDraftNMin"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": { "specType": "draft-mtp" }
+    },
+    {
+      "id": "dflash",
+      "label": "DFlash",
+      "group": "Speculative",
+      "description": "Uses a DFlash block-diffusion draft model through the existing DFlash model shortcut. It exposes draft model, token, GPU, cache, Flash Attention, and Jinja controls without forcing hardware-dependent defaults.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "dflashModel", "specDraftNMax", "specDraftNMin",
+        "specDraftGpuLayers", "specDraftTypeK", "specDraftTypeV", "flashAttn", "jinja"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": {}
+    },
+    {
+      "id": "draftModel",
+      "label": "Draft Model",
+      "group": "Speculative",
+      "description": "Uses a separate simple draft model through --spec-type draft-simple. It focuses both model sources and the draft probability, device, GPU, and cache controls.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftModel", "specDraftHf",
+        "specDraftNMax", "specDraftNMin", "specDraftPMin", "specDraftPSplit", "specDraftDevice", "specDraftGpuLayers",
+        "specDraftTypeK", "specDraftTypeV"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": { "specType": "draft-simple" }
+    },
+    {
+      "id": "eagle3",
+      "label": "EAGLE-3",
+      "group": "Speculative",
+      "description": "Uses an EAGLE-3 draft model through --spec-type draft-eagle3. It focuses both model sources and the draft probability, device, GPU, and cache controls.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftModel", "specDraftHf",
+        "specDraftNMax", "specDraftNMin", "specDraftPMin", "specDraftPSplit", "specDraftDevice", "specDraftGpuLayers",
+        "specDraftTypeK", "specDraftTypeV"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": { "specType": "draft-eagle3" }
+    },
+    {
+      "id": "ngram",
+      "label": "N-gram",
+      "group": "Speculative",
+      "description": "Uses simple n-gram pattern matching through --spec-type ngram-simple. It exposes the n-gram length, draft length, and minimum-hit controls without requiring a draft model.",
+      "modes": ["cli", "server"],
+      "fieldIds": [
+        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
+        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "ownedFieldIds": [
+        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
+        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
+        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
+      ],
+      "values": { "specType": "ngram-simple" }
+    },
+    {
+      "id": "chatApi",
+      "label": "Chat / API",
+      "group": "Server workloads",
+      "description": "Focuses a standard chat-completion and HTTP API server configuration. It clears embedding and reranking workload modes but leaves optional Jinja, reasoning, templates, and experimental tools under user control.",
+      "modes": ["server"],
+      "fieldIds": [
+        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "gpuLayers",
+        "flashAttn", "cacheTypeK", "cacheTypeV", "host", "port", "alias", "apiKey", "apiKeyFile", "parallel",
+        "jinja", "reasoning", "reasoningFormat", "chatTemplate", "tools"
+      ],
+      "ownedFieldIds": ["embedding", "rerank", "pooling"],
+      "values": { "embedding": false, "rerank": false, "pooling": "" }
+    },
+    {
+      "id": "embeddings",
+      "label": "Embeddings",
+      "group": "Server workloads",
+      "description": "Configures llama-server for a dedicated embeddings workload. It enables embedding-only mode while leaving pooling unset so llama.cpp can use the model default.",
+      "modes": ["server"],
+      "fieldIds": [
+        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "batchSize",
+        "ubatchSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "embedding", "pooling", "embdNormalize", "parallel",
+        "host", "port", "alias", "apiKey", "apiKeyFile"
+      ],
+      "ownedFieldIds": ["embedding", "rerank", "pooling"],
+      "values": { "embedding": true, "rerank": false, "pooling": "" }
+    },
+    {
+      "id": "reranking",
+      "label": "Reranking",
+      "group": "Server workloads",
+      "description": "Configures llama-server for the reranking endpoint with embedding mode and rank pooling. It exposes the model, batch, parallel, listener, alias, and authentication controls needed around that semantic requirement.",
+      "modes": ["server"],
+      "fieldIds": [
+        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "batchSize",
+        "ubatchSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "embedding", "rerank", "pooling", "embdNormalize",
+        "parallel", "host", "port", "alias", "apiKey", "apiKeyFile"
+      ],
+      "ownedFieldIds": ["embedding", "rerank", "pooling"],
+      "values": { "embedding": true, "rerank": true, "pooling": "rank" }
+    }
+  ],
   "categories": [
     {
       "id": "model",
