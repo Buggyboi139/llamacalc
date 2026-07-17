@@ -32,7 +32,7 @@ Then open `http://127.0.0.1:4173`.
 
 Everything runs client-side. Builder state is stored under `llamacmd_state_v1`, benchmark entries under `llamacmd_logs_v1`, and fields marked as secrets are never persisted.
 
-The bundled Audiowide font prevents third-party font requests. The app makes no application requests after its static files and `flags.json` load.
+The bundled Space Grotesk font prevents third-party font requests. Generated commands and flag aliases use the platform's native monospace stack for scanability. The app makes no application requests after its static files and `flags.json` load.
 
 ## Project structure
 

@@ -283,12 +283,26 @@ test('Essentials follows the active preset while normal category tabs remain com
     assert.ok(advanced.includes('extraFlags'));
 });
 
+test('typography is local, readable, and preserves monospace command surfaces', () => {
+    const css = readStyles();
+    const fontPath = path.join(root, 'assets/fonts/SpaceGrotesk-Variable.ttf');
+    const licensePath = path.join(root, 'assets/fonts/SpaceGrotesk-OFL.txt');
+
+    assert.equal(fs.existsSync(fontPath), true, 'Space Grotesk font must be bundled locally');
+    assert.equal(fs.existsSync(licensePath), true, 'Space Grotesk license must be bundled locally');
+    assert.match(css, /@font-face\s*\{[^}]*font-family:\s*["']Space Grotesk["'][^}]*url\(["']assets\/fonts\/SpaceGrotesk-Variable\.ttf["']\)\s*format\(["']truetype["']\)/s);
+    assert.match(css, /body\s*\{[^}]*font-family:\s*["']Space Grotesk["'],\s*-apple-system,\s*BlinkMacSystemFont,\s*["']Segoe UI["'],\s*sans-serif/s);
+    assert.match(css, /\.flag-aliases\s*\{[^}]*font-family:\s*ui-monospace/s);
+    assert.match(css, /#commandOutput\s*\{[^}]*font-family:\s*ui-monospace/s);
+    assert.doesNotMatch(css, /Audiowide/i);
+});
+
 test('cosmic styles expose the approved visual and accessibility tokens', () => {
     const css = readStyles();
     for (const token of ['--neutral-primary-soft', '--signal-cyan', '--signal-violet', '--focus-ring']) {
         assert.match(css, new RegExp(token));
     }
-    assert.match(css, /font-family:\s*["']?Audiowide/i);
+    assert.match(css, /font-family:\s*["']Space Grotesk["']/i);
     assert.match(css, /prefers-reduced-motion/);
     assert.match(css, /forced-colors/);
     assert.match(css, /:focus-visible/);
