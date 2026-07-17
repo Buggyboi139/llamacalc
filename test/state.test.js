@@ -25,6 +25,7 @@ test('default state contains UI defaults and every current field', () => {
     assert.equal(state.windowsShell, 'powershell');
     assert.equal(state.multiline, true);
     assert.equal(state.activeCategory, 'essentials');
+    assert.equal(state.activePreset, 'plain');
     assert.equal(state.values.ctxSize, '');
     assert.equal(state.values.serverPath, '');
     assert.equal(state.values.extraFlags, '');
@@ -49,6 +50,15 @@ test('loads legacy values, supplies platform defaults, and preserves DFlash', ()
     assert.equal(state.multiline, false);
     assert.equal(state.values.ctxSize, '8192');
     assert.equal(state.values.dflashModel, '/old.gguf');
+    assert.equal(state.activePreset, 'plain');
+});
+
+test('loads the saved preset selection', () => {
+    const storage = memoryStorage({
+        [STATE_KEY]: JSON.stringify({ activePreset: 'mtp' })
+    });
+
+    assert.equal(loadState(storage, registry).activePreset, 'mtp');
 });
 
 test('never loads or persists registry-marked secrets', () => {
@@ -75,6 +85,7 @@ test('persists the existing flat shape with platform controls', () => {
     const state = defaultState(registry);
     state.platform = 'windows';
     state.windowsShell = 'cmd';
+    state.activePreset = 'multiGpu';
     state.values.modelPath = 'C:\\Models\\one.gguf';
 
     saveState(storage, state, registry);
@@ -82,6 +93,7 @@ test('persists the existing flat shape with platform controls', () => {
 
     assert.equal(saved.platform, 'windows');
     assert.equal(saved.windowsShell, 'cmd');
+    assert.equal(saved.activePreset, 'multiGpu');
     assert.equal(saved.modelPath, 'C:\\Models\\one.gguf');
     assert.equal(saved.values, undefined);
 });

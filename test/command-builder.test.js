@@ -6,6 +6,7 @@ const { createRegistry } = require('../lib/registry.js');
 const { defaultState } = require('../lib/state.js');
 const { validateState } = require('../lib/validation.js');
 const { buildArguments } = require('../lib/command-builder.js');
+const { applyPreset } = require('../lib/presets.js');
 
 const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'flags.json'), 'utf8'));
 const registry = createRegistry(data);
@@ -105,4 +106,53 @@ test('DFlash overrides generic speculative fields with one warning', () => {
 
     assert.deepEqual(values(model), ['-md', '/models/dflash.gguf', '--spec-type', 'draft-dflash']);
     assert.equal(model.warnings.filter(warning => warning.id === 'dflash-override').length, 1);
+});
+
+test('speculative presets generate the documented fixed arguments', () => {
+    const recipes = [
+        ['defaultSpeculative', ['--spec-default']],
+        ['mtp', ['--spec-type', 'draft-mtp']],
+        ['draftModel', ['--spec-type', 'draft-simple']],
+        ['eagle3', ['--spec-type', 'draft-eagle3']],
+        ['ngram', ['--spec-type', 'ngram-simple']]
+    ];
+
+    for (const [presetId, expected] of recipes) {
+        const state = makeState();
+        applyPreset(registry, state, presetId);
+        assert.deepEqual(
+            values(buildArguments(registry, state, validateState(registry, state))),
+            expected,
+            presetId
+        );
+    }
+});
+
+test('DFlash preset combines its focused model field with automatic type', () => {
+    const state = makeState();
+    applyPreset(registry, state, 'dflash');
+    state.values.dflashModel = '/models/DFlash model.gguf';
+
+    assert.deepEqual(
+        values(buildArguments(registry, state, validateState(registry, state))),
+        ['-md', '/models/DFlash model.gguf', '--spec-type', 'draft-dflash']
+    );
+});
+
+test('server workload presets generate their fixed semantic arguments', () => {
+    const cases = [
+        ['chatApi', []],
+        ['embeddings', ['--embedding']],
+        ['reranking', ['--pooling', 'rank', '--embedding', '--rerank']]
+    ];
+
+    for (const [presetId, expected] of cases) {
+        const state = makeState();
+        applyPreset(registry, state, presetId);
+        assert.deepEqual(
+            values(buildArguments(registry, state, validateState(registry, state))),
+            expected,
+            presetId
+        );
+    }
 });
