@@ -168,7 +168,7 @@ h1 {
     background: var(--heading-gradient);
     background-clip: text;
     color: transparent;
-    font-size: clamp(2rem, 4vw, 3.75rem);
+    font-size: clamp(2rem, 3vw, 3.75rem);
 }
 
 h2 {
@@ -516,6 +516,7 @@ a:hover {
 .command-panel {
     position: sticky;
     top: var(--sticky-offset);
+    min-width: 0;
 }
 
 .category-rail {
@@ -1243,6 +1244,8 @@ td strong {
 
     #categoryNav {
         display: flex;
+        max-width: 100%;
+        min-width: 0;
         padding-bottom: 0.35rem;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
@@ -1429,7 +1432,7 @@ td strong {
     }
 
     h1 {
-        font-size: 2rem;
+        font-size: 1.7rem;
     }
 
     h2 {

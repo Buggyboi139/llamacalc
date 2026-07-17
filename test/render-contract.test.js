@@ -20,6 +20,12 @@ test('shell has exactly one global flag search', () => {
     assert.match(html, /aria-controls="flagWorkspace"/);
 });
 
+test('shell declares a local static favicon', () => {
+    const html = readIndex();
+    assert.match(html, /rel="icon"[^>]*href="assets\/favicon\.svg"/);
+    assert.equal(fs.existsSync(path.join(root, 'assets/favicon.svg')), true);
+});
+
 test('mode and operating system are peer radio groups', () => {
     const html = readIndex();
     assert.match(html, /<fieldset[^>]*id="modeSelector"/);
@@ -147,4 +153,20 @@ test('cosmic styles expose the approved visual and accessibility tokens', () => 
     assert.match(css, /forced-colors/);
     assert.match(css, /:focus-visible/);
     assert.match(css, /@media\s*\(max-width:\s*720px\)/);
+});
+
+test('responsive workbench children can shrink without page overflow', () => {
+    const css = readStyles();
+    assert.match(css, /\.category-rail,\s*\.command-panel\s*\{[^}]*min-width:\s*0/s);
+    assert.match(css, /@media\s*\(max-width:\s*480px\)[\s\S]*?h1\s*\{[^}]*font-size:\s*1\.7rem/);
+});
+
+test('legacy split catalogue and unsupported DFlash code are removed', () => {
+    for (const file of ['command-rules.js', 'script.js', 'starter-fields.js', 'starter-fields.css', 'test/dflash.test.js']) {
+        assert.equal(fs.existsSync(path.join(root, file)), false, file);
+    }
+    const allRuntime = ['index.html', 'app.js', ...fs.readdirSync(path.join(root, 'lib')).map(file => `lib/${file}`)]
+        .map(file => fs.readFileSync(path.join(root, file), 'utf8'))
+        .join('\n');
+    assert.doesNotMatch(allRuntime, /DFlash|draft-dflash|dflashModel/);
 });

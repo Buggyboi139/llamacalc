@@ -30,7 +30,7 @@ test('macOS uses POSIX quoting and backslash continuation', () => {
         { platform: 'macos', multiline: true }
     );
 
-    assert.equal(command, "./llama-cli \\\n+  -m \\\n+  'model one.gguf'");
+    assert.equal(command, "./llama-cli \\\n  -m \\\n  'model one.gguf'");
 });
 
 test('raw segments remain verbatim in POSIX output', () => {
