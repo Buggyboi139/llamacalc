@@ -49,7 +49,7 @@
         <div class="preset-control">
             <label for="presetSelector">Preset</label>
             <select id="presetSelector" aria-describedby="presetDescription"></select>
-            <span id="presetDescription" class="visually-hidden">Changes Essentials and replaces values owned by the selected recipe.</span>
+            <span id="presetDescription" class="visually-hidden">Changes Essentials, clears alternative model sources, and applies recipe-specific values.</span>
         </div>
 
         <fieldset id="platformSelector" class="segmented-control">
@@ -83,6 +83,7 @@
                     <p class="eyebrow" id="workspaceEyebrow">Essentials</p>
                     <div class="heading-glow"><h1 id="workspaceHeading">Configure your command</h1></div>
                     <p id="workspaceSummary">Frequently used options for the selected llama.cpp tool.</p>
+                    <p id="presetApplies" class="preset-applies" aria-live="polite"></p>
                 </div>
                 <output id="resultCount" aria-live="polite"></output>
             </div>

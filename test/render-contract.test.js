@@ -49,7 +49,7 @@ test('preset selector is a distinct labeled control between tool and operating s
 
 test('shell contains workbench and preserved benchmark landmarks', () => {
     const html = readIndex();
-    for (const id of ['categoryNav', 'flagWorkspace', 'commandOutput', 'warningList', 'benchmarkLog', 'logTable']) {
+    for (const id of ['categoryNav', 'flagWorkspace', 'presetApplies', 'commandOutput', 'warningList', 'benchmarkLog', 'logTable']) {
         assert.match(html, new RegExp(`id="${id}"`));
     }
 });
@@ -147,6 +147,48 @@ test('renderer uses textContent and persistent described-by help', () => {
     assert.ok(all.some(element => element.textContent === flag.label));
 });
 
+test('renderer highlights required target and draft fields only when preset metadata requests it', () => {
+    const { createFlagCard } = require('../lib/render');
+    const base = {
+        id: 'modelPath',
+        label: 'Target model path',
+        canonical: '--model',
+        aliases: ['-m'],
+        value: { type: 'string' },
+        description: 'Selects a model. Use a local GGUF path.'
+    };
+    const target = createFlagCard(fakeDocument, {
+        ...base,
+        essentialRole: 'target',
+        essentialRequired: true
+    }, '', '', {});
+    const ordinary = createFlagCard(fakeDocument, base, '', '', {});
+
+    assert.match(target.className, /is-essential-target/);
+    assert.ok(descendants(target).some(element => element.textContent === 'Required · Target'));
+    assert.equal(descendants(target).find(element => element.dataset.flagId === 'modelPath').attributes['aria-required'], 'true');
+    assert.doesNotMatch(ordinary.className, /is-essential/);
+    assert.equal(descendants(ordinary).some(element => element.textContent.startsWith('Required')), false);
+});
+
+test('renderer inserts preset-only setup section labels', () => {
+    const { renderFlagCards } = require('../lib/render');
+    const container = new FakeElement('div');
+    const fields = ['device', 'splitMode'].map((id, index) => ({
+        id,
+        label: id,
+        canonical: index ? '--split-mode' : '--device',
+        aliases: [],
+        value: { type: 'string' },
+        description: 'Configures multi-GPU behavior. Use it only when needed.',
+        essentialSection: 'Multi-GPU setup'
+    }));
+
+    renderFlagCards(fakeDocument, container, fields, {}, new Map(), {});
+    assert.equal(container.children[0].textContent, 'Multi-GPU setup');
+    assert.match(container.children[0].className, /essential-section-heading/);
+});
+
 test('renderer search results reuse canonical flag state keys', () => {
     const { renderFlagCards } = require('../lib/render');
     const container = new FakeElement('div');
@@ -234,6 +276,11 @@ test('Essentials follows the active preset while normal category tabs remain com
     const speculative = itemsForCategory(registry, state).map(field => field.id);
     assert.ok(speculative.includes('dflashModel'));
     assert.ok(speculative.includes('specType'));
+
+    state.activeCategory = 'advanced';
+    const advanced = itemsForCategory(registry, state).map(field => field.id);
+    assert.ok(advanced.includes('serverPath'));
+    assert.ok(advanced.includes('extraFlags'));
 });
 
 test('cosmic styles expose the approved visual and accessibility tokens', () => {
@@ -246,6 +293,10 @@ test('cosmic styles expose the approved visual and accessibility tokens', () => 
     assert.match(css, /forced-colors/);
     assert.match(css, /:focus-visible/);
     assert.match(css, /@media\s*\(max-width:\s*720px\)/);
+    assert.match(css, /\.flag-card\.is-essential-target/);
+    assert.match(css, /\.flag-card\.is-essential-draft/);
+    assert.match(css, /\.warning-danger/);
+    assert.match(css, /\.warning-info/);
 });
 
 test('responsive workbench children can shrink without page overflow', () => {

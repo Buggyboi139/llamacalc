@@ -96,7 +96,7 @@ test('DFlash shortcut emits one draft model and automatic speculative type', () 
     assert.deepEqual(values(model), ['-md', '/models/DFlash model.gguf', '--spec-type', 'draft-dflash']);
 });
 
-test('DFlash overrides generic speculative fields with one warning', () => {
+test('DFlash overrides generic speculative fields without duplicating validation warnings', () => {
     const state = makeState({
         dflashModel: '/models/dflash.gguf',
         specDraftModel: '/models/generic.gguf',
@@ -105,7 +105,9 @@ test('DFlash overrides generic speculative fields with one warning', () => {
     const model = buildArguments(registry, state, validateState(registry, state));
 
     assert.deepEqual(values(model), ['-md', '/models/dflash.gguf', '--spec-type', 'draft-dflash']);
-    assert.equal(model.warnings.filter(warning => warning.id === 'dflash-override').length, 1);
+    assert.equal(model.warnings.filter(warning => warning.id === 'dflash-override').length, 0);
+    assert.equal(model.warnings.filter(warning => warning.id === 'draft-source-conflict').length, 1);
+    assert.equal(model.warnings.filter(warning => warning.id === 'dflash-type-override').length, 1);
 });
 
 test('speculative presets generate the documented fixed arguments', () => {

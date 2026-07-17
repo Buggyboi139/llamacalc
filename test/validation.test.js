@@ -45,6 +45,104 @@ test('warns about model source priority in its current order', () => {
         /local path, HF repo, model URL, Docker repo/);
 });
 
+test('competing-source warnings focus the first field that is actually filled', () => {
+    const target = validateState(registry, stateWith({ hfRepo: 'org/model', modelUrl: 'https://example.test/model.gguf' }));
+    const draft = validateState(registry, stateWith({ specDraftModel: 'draft.gguf', specDraftHf: 'org/draft' }));
+
+    assert.equal(target.warnings.find(item => item.id === 'source-conflict').fieldId, 'hfRepo');
+    assert.equal(draft.warnings.find(item => item.id === 'draft-source-conflict').fieldId, 'specDraftModel');
+});
+
+test('evaluates hard compatibility rules from registry metadata without changing values', () => {
+    const cases = [
+        [{ flashAttn: 'off', cacheTypeV: 'q4_0' }, 'flash-off-quantized-main-v'],
+        [{ flashAttn: 'off', specDraftTypeV: 'q8_0' }, 'flash-off-quantized-draft-v'],
+        [{ splitMode: 'tensor', flashAttn: 'off' }, 'tensor-requires-flash'],
+        [{ splitMode: 'tensor', cacheTypeK: 'q4_1' }, 'tensor-quantized-cache'],
+        [{ splitMode: 'tensor', fit: 'on' }, 'tensor-fit-conflict']
+    ];
+
+    for (const [values, warningId] of cases) {
+        const state = stateWith(values);
+        const before = JSON.stringify(state.values);
+        const result = validateState(registry, state);
+        const match = result.warnings.find(item => item.id === warningId);
+        assert.ok(match, warningId);
+        assert.equal(match.severity, 'danger', warningId);
+        assert.equal(JSON.stringify(state.values), before, warningId);
+    }
+});
+
+test('warns about competing manual sources and overrides without clearing them', () => {
+    const values = {
+        dflashModel: '/models/dflash.gguf',
+        specDraftModel: '/models/draft.gguf',
+        specDraftHf: 'org/draft',
+        specType: 'draft-mtp',
+        specDefault: true,
+        grammar: 'root ::= object',
+        jsonSchemaFile: 'schema.json',
+        prompt: 'Hello',
+        promptFile: 'prompt.txt',
+        chatTemplate: '{{ messages }}',
+        chatTemplateFile: 'template.jinja'
+    };
+    const state = stateWith(values, { mode: 'cli' });
+    const result = validateState(registry, state);
+    const ids = new Set(result.warnings.map(item => item.id));
+
+    for (const id of [
+        'draft-source-conflict',
+        'dflash-type-override',
+        'spec-default-precedence',
+        'output-constraint-conflict',
+        'prompt-source-conflict',
+        'chat-template-conflict'
+    ]) {
+        assert.ok(ids.has(id), id);
+    }
+    assert.deepEqual(Object.fromEntries(Object.keys(values).map(id => [id, state.values[id]])), values);
+});
+
+test('warns when reranking is paired with non-rank pooling', () => {
+    const result = validateState(registry, stateWith({ rerank: true, pooling: 'mean' }));
+    assert.ok(result.warnings.some(item => item.id === 'rerank-pooling-conflict'));
+});
+
+test('warns about ignored companion and multi-GPU settings', () => {
+    const result = validateState(registry, stateWith({
+        hfFile: 'model.gguf',
+        splitMode: 'none',
+        tensorSplit: '1,1',
+        mainGpu: '1',
+        fit: 'off',
+        fitTarget: '1024',
+        fitCtx: '4096'
+    }));
+    const ids = new Set(result.warnings.map(item => item.id));
+
+    for (const id of ['hf-file-ignored', 'tensor-split-ignored', 'fit-settings-ignored']) {
+        assert.ok(ids.has(id), id);
+    }
+    assert.equal(ids.has('main-gpu-ignored'), false);
+
+    const layer = validateState(registry, stateWith({ splitMode: 'layer', mainGpu: '1' }));
+    assert.ok(layer.warnings.some(item => item.id === 'main-gpu-ignored'));
+});
+
+test('does not mislabel supported cache and repository combinations', () => {
+    const supported = validateState(registry, stateWith({
+        flashAttn: 'off',
+        cacheTypeK: 'q4_0',
+        hfRepo: 'org/model',
+        hfFile: 'model.gguf'
+    }));
+    const ids = new Set(supported.warnings.map(item => item.id));
+
+    assert.equal(ids.has('flash-off-quantized-main-v'), false);
+    assert.equal(ids.has('hf-file-ignored'), false);
+});
+
 test('warns about exposed unauthenticated servers', () => {
     const result = validateState(registry, stateWith({ host: '0.0.0.0' }));
     assert.match(result.warnings.find(warning => warning.id === 'public-server').message, /without an API key/);

@@ -673,6 +673,17 @@ a:hover {
     color: var(--body);
 }
 
+.preset-applies {
+    width: fit-content;
+    margin-top: 0.7rem;
+    padding: 0.35rem 0.55rem;
+    color: var(--fg-brand-strong);
+    border-left: 2px solid var(--signal-violet);
+    background: var(--surface-violet-soft);
+    font-size: 0.6rem;
+    line-height: 1.5;
+}
+
 #resultCount {
     flex: none;
     padding: 0.35rem 0.55rem;
@@ -688,6 +699,17 @@ a:hover {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
     gap: 0.8rem;
+}
+
+.essential-section-heading {
+    grid-column: 1 / -1;
+    margin: 0.45rem 0 0;
+    padding: 0.55rem 0 0.35rem;
+    color: var(--signal-violet);
+    border-bottom: 1px solid var(--border-default-medium);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .flag-card,
@@ -736,6 +758,16 @@ a:hover {
 
 .flag-card.has-error {
     background: var(--border-danger);
+}
+
+.flag-card.is-essential-target {
+    background: var(--border-brand);
+    box-shadow: var(--shadow-xs), var(--glow-cyan);
+}
+
+.flag-card.is-essential-draft {
+    background: #5b4a91;
+    box-shadow: var(--shadow-xs), var(--glow-violet);
 }
 
 .flag-card-heading,
@@ -801,6 +833,20 @@ a:hover {
     font-size: 0.55rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+}
+
+.status-essential {
+    border-color: currentColor;
+}
+
+.status-target {
+    color: var(--signal-cyan);
+    background: var(--surface-cyan-soft);
+}
+
+.status-draft {
+    color: var(--signal-violet);
+    background: var(--surface-violet-soft);
 }
 
 .flag-input {
@@ -1015,6 +1061,30 @@ select option {
 
 .warning-item:disabled {
     cursor: default;
+}
+
+.warning-danger {
+    color: var(--danger);
+    border-color: var(--border-danger);
+    background: var(--surface-danger-soft);
+}
+
+.warning-danger:hover:not(:disabled),
+.warning-danger:focus-visible {
+    border-color: var(--danger);
+    box-shadow: 0 0 18px rgba(251, 113, 133, 0.2);
+}
+
+.warning-info {
+    color: var(--fg-brand);
+    border-color: var(--border-brand);
+    background: var(--surface-cyan-soft);
+}
+
+.warning-info:hover:not(:disabled),
+.warning-info:focus-visible {
+    border-color: var(--signal-cyan);
+    box-shadow: var(--glow-cyan);
 }
 
 .privacy-note {

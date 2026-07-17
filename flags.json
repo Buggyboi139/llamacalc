@@ -1,7 +1,7 @@
 {
   "meta": {
-    "schemaVersion": 1,
-    "auditedAt": "2026-07-16",
+    "schemaVersion": 2,
+    "auditedAt": "2026-07-17",
     "sources": {
       "cli": "https://github.com/ggml-org/llama.cpp/blob/master/tools/cli/README.md",
       "server": "https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md"
@@ -119,185 +119,347 @@
       }
     ]
   },
+  "validationSets": {
+    "quantizedCacheTypes": ["q8_0", "q4_0", "q4_1", "iq4_nl", "q5_0", "q5_1"]
+  },
+  "presetDefaults": {
+    "clearOnApplyFieldIds": ["hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "specDraftHf"],
+    "fieldPresentation": {
+      "modelPath": { "label": "Target model path", "essentialRole": "target", "essentialRequired": true }
+    }
+  },
+  "compatibilityRules": [
+    {
+      "id": "flash-off-quantized-main-v",
+      "severity": "danger",
+      "fieldId": "flashAttn",
+      "message": "Cannot run: quantized main V cache requires Flash Attention. Set Flash Attention to On or Auto, or use f32, f16, or bf16 for Cache type V.",
+      "when": { "all": [
+        { "fieldId": "flashAttn", "operator": "equals", "value": "off" },
+        { "fieldId": "cacheTypeV", "operator": "inSet", "setRef": "quantizedCacheTypes" }
+      ] }
+    },
+    {
+      "id": "flash-off-quantized-draft-v",
+      "severity": "danger",
+      "fieldId": "flashAttn",
+      "message": "Cannot run: quantized draft V cache requires Flash Attention. Set Flash Attention to On or Auto, or use f32, f16, or bf16 for Draft cache type V.",
+      "when": { "all": [
+        { "fieldId": "flashAttn", "operator": "equals", "value": "off" },
+        { "fieldId": "specDraftTypeV", "operator": "inSet", "setRef": "quantizedCacheTypes" }
+      ] }
+    },
+    {
+      "id": "tensor-requires-flash",
+      "severity": "danger",
+      "fieldId": "splitMode",
+      "message": "Cannot run: tensor split mode requires Flash Attention. Set Flash Attention to On or Auto, or choose layer split mode.",
+      "when": { "all": [
+        { "fieldId": "splitMode", "operator": "equals", "value": "tensor" },
+        { "fieldId": "flashAttn", "operator": "equals", "value": "off" }
+      ] }
+    },
+    {
+      "id": "tensor-quantized-cache",
+      "severity": "danger",
+      "fieldId": "splitMode",
+      "message": "Cannot run: tensor split mode does not currently support quantized K or V caches. Use f32, f16, or bf16 cache types, or choose layer split mode.",
+      "when": { "all": [
+        { "fieldId": "splitMode", "operator": "equals", "value": "tensor" },
+        { "any": [
+          { "fieldId": "cacheTypeK", "operator": "inSet", "setRef": "quantizedCacheTypes" },
+          { "fieldId": "cacheTypeV", "operator": "inSet", "setRef": "quantizedCacheTypes" },
+          { "fieldId": "specDraftTypeK", "operator": "inSet", "setRef": "quantizedCacheTypes" },
+          { "fieldId": "specDraftTypeV", "operator": "inSet", "setRef": "quantizedCacheTypes" }
+        ] }
+      ] }
+    },
+    {
+      "id": "tensor-fit-conflict",
+      "severity": "danger",
+      "fieldId": "fit",
+      "message": "Cannot run: automatic Fit is not supported with tensor split mode. Set Fit to Off or use layer split mode.",
+      "when": { "all": [
+        { "fieldId": "splitMode", "operator": "equals", "value": "tensor" },
+        { "fieldId": "fit", "operator": "equals", "value": "on" }
+      ] }
+    },
+    {
+      "id": "source-conflict",
+      "severity": "warning",
+      "fieldId": "modelPath",
+      "focusFieldIds": ["modelPath", "hfRepo", "modelUrl", "dockerRepo"],
+      "message": "Conflict: multiple model sources are filled. Priority is local path, HF repo, model URL, Docker repo; lower-priority sources remain saved but are not emitted.",
+      "when": { "filledCount": {
+        "fieldIds": ["modelPath", "hfRepo", "modelUrl", "dockerRepo"],
+        "minimum": 2
+      } }
+    },
+    {
+      "id": "draft-source-conflict",
+      "severity": "warning",
+      "fieldId": "dflashModel",
+      "focusFieldIds": ["dflashModel", "specDraftModel", "specDraftHf"],
+      "message": "Conflict: multiple draft model fields are filled. DFlash overrides the generic Draft model path, while Draft HF repo may still be emitted; a repo plus draft filename can also be intentional, so verify the generated command.",
+      "when": { "filledCount": {
+        "fieldIds": ["dflashModel", "specDraftModel", "specDraftHf"],
+        "minimum": 2
+      } }
+    },
+    {
+      "id": "dflash-type-override",
+      "severity": "warning",
+      "fieldId": "dflashModel",
+      "message": "Conflict: DFlash model path forces --spec-type draft-dflash, so the manually entered Spec type is not emitted.",
+      "when": { "all": [
+        { "fieldId": "dflashModel", "operator": "filled" },
+        { "fieldId": "specType", "operator": "filled" },
+        { "fieldId": "specType", "operator": "notEquals", "value": "draft-dflash" }
+      ] }
+    },
+    {
+      "id": "spec-default-precedence",
+      "severity": "warning",
+      "fieldId": "specDefault",
+      "message": "Conflict: default draftless speculative decoding has higher precedence than an explicit draft configuration. Disable Spec default if the draft model or explicit Spec type should control decoding.",
+      "when": { "all": [
+        { "fieldId": "specDefault", "operator": "equals", "value": true },
+        { "any": [
+          { "fieldId": "dflashModel", "operator": "filled" },
+          { "fieldId": "specDraftModel", "operator": "filled" },
+          { "fieldId": "specDraftHf", "operator": "filled" },
+          { "fieldId": "specType", "operator": "filled" }
+        ] }
+      ] }
+    },
+    {
+      "id": "output-constraint-conflict",
+      "severity": "warning",
+      "fieldId": "grammar",
+      "focusFieldIds": ["grammar", "grammarFile", "jsonSchema", "jsonSchemaFile"],
+      "message": "Conflict: multiple output constraints are filled. Use only one of Grammar, Grammar file, JSON schema, or JSON schema file to avoid an order-dependent override.",
+      "when": { "filledCount": {
+        "fieldIds": ["grammar", "grammarFile", "jsonSchema", "jsonSchemaFile"],
+        "minimum": 2
+      } }
+    },
+    {
+      "id": "prompt-source-conflict",
+      "severity": "warning",
+      "fieldId": "prompt",
+      "focusFieldIds": ["prompt", "promptFile", "binaryFile"],
+      "modes": ["cli"],
+      "message": "Conflict: multiple prompt sources are filled. Use Prompt, Prompt file, or Binary file—not more than one—to avoid an order-dependent override.",
+      "when": { "filledCount": {
+        "fieldIds": ["prompt", "promptFile", "binaryFile"],
+        "minimum": 2
+      } }
+    },
+    {
+      "id": "chat-template-conflict",
+      "severity": "warning",
+      "fieldId": "chatTemplate",
+      "focusFieldIds": ["chatTemplate", "chatTemplateFile"],
+      "message": "Conflict: both Chat template and Chat template file are filled. Choose one template source to avoid an order-dependent override.",
+      "when": { "filledCount": {
+        "fieldIds": ["chatTemplate", "chatTemplateFile"],
+        "minimum": 2
+      } }
+    },
+    {
+      "id": "rerank-pooling-conflict",
+      "severity": "warning",
+      "fieldId": "pooling",
+      "modes": ["server"],
+      "message": "Conflict: reranking requires rank pooling and overrides the selected pooling mode. Clear Pooling or set it to rank.",
+      "when": { "all": [
+        { "fieldId": "rerank", "operator": "equals", "value": true },
+        { "fieldId": "pooling", "operator": "filled" },
+        { "fieldId": "pooling", "operator": "notEquals", "value": "rank" }
+      ] }
+    },
+    {
+      "id": "hf-file-ignored",
+      "severity": "info",
+      "fieldId": "hfFile",
+      "message": "Ignored: HF file is emitted only when an HF repo is selected. Add an HF repo or clear HF file.",
+      "when": { "all": [
+        { "fieldId": "hfFile", "operator": "filled" },
+        { "fieldId": "hfRepo", "operator": "notFilled" }
+      ] }
+    },
+    {
+      "id": "tensor-split-ignored",
+      "severity": "info",
+      "fieldId": "tensorSplit",
+      "message": "Ignored: Tensor split proportions have no effect when Split mode is none. Clear Tensor split or choose layer, row, or tensor mode.",
+      "when": { "all": [
+        { "fieldId": "tensorSplit", "operator": "filled" },
+        { "fieldId": "splitMode", "operator": "equals", "value": "none" }
+      ] }
+    },
+    {
+      "id": "main-gpu-ignored",
+      "severity": "info",
+      "fieldId": "mainGpu",
+      "message": "Ignored: Main GPU applies to none and row split modes, not layer or tensor. Clear Main GPU or choose a compatible split mode.",
+      "when": { "all": [
+        { "fieldId": "mainGpu", "operator": "filled" },
+        { "fieldId": "splitMode", "operator": "in", "values": ["layer", "tensor"] }
+      ] }
+    },
+    {
+      "id": "fit-settings-ignored",
+      "severity": "info",
+      "fieldId": "fit",
+      "message": "Ignored: Fit target and Fit context have no effect while Fit is Off. Clear those settings or enable Fit.",
+      "when": { "all": [
+        { "fieldId": "fit", "operator": "equals", "value": "off" },
+        { "any": [
+          { "fieldId": "fitTarget", "operator": "filled" },
+          { "fieldId": "fitCtx", "operator": "filled" }
+        ] }
+      ] }
+    }
+  ],
   "presets": [
     {
       "id": "plain",
       "label": "Plain",
       "group": "General",
-      "description": "Builds a standard llama.cpp command without selecting a specialized workload or decoding strategy. It keeps the most common model, runtime, offload, cache, prompt, and listener fields in Essentials.",
+      "description": "Starts with only the target GGUF path and adds no specialized workload or decoding strategy. Use the full category tabs to add any optional llama.cpp settings.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "predict", "threads", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV",
-        "prompt", "host", "port", "parallel"
-      ],
+      "fieldIds": ["modelPath"],
       "ownedFieldIds": [],
-      "values": {}
+      "values": {},
+      "appliedArguments": []
     },
     {
       "id": "multiGpu",
       "label": "Multi-GPU",
       "group": "General",
-      "description": "Focuses the controls used to place and split a model across multiple accelerators. It leaves split policy and ratios unset because the correct values depend on the model and available devices.",
+      "description": "Starts with the target GGUF path and the device-splitting controls needed for multiple accelerators. Choose the visible devices, split mode, and proportions for the hardware you actually have.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "batchSize", "ubatchSize", "gpuLayers", "device", "splitMode", "tensorSplit", "mainGpu",
-        "fit", "fitTarget", "fitCtx", "flashAttn", "cacheTypeK", "cacheTypeV"
-      ],
+      "fieldIds": ["modelPath", "device", "splitMode", "tensorSplit"],
       "ownedFieldIds": [],
-      "values": {}
+      "values": {},
+      "fieldPresentation": {
+        "device": { "essentialSection": "Multi-GPU setup" },
+        "splitMode": { "essentialSection": "Multi-GPU setup" },
+        "tensorSplit": { "essentialSection": "Multi-GPU setup" }
+      },
+      "appliedArguments": []
     },
     {
       "id": "defaultSpeculative",
       "label": "Default Speculative",
       "group": "Speculative",
-      "description": "Enables llama.cpp's current default speculative configuration through --spec-default. It exposes the n-gram-mod controls used by that default without guessing performance values.",
+      "description": "Starts with the target GGUF path and enables llama.cpp's current default speculative configuration. Optional n-gram tuning remains available under Speculative decoding.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specDefault",
-        "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": { "specDefault": true }
+      "fieldIds": ["modelPath"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": { "specDefault": true },
+      "appliedArguments": ["--spec-default"]
     },
     {
       "id": "mtp",
       "label": "MTP",
       "group": "Speculative",
-      "description": "Uses Multi Token Prediction heads from the main model through --spec-type draft-mtp. It focuses MTP controls without requesting a separate draft model.",
+      "description": "Starts with target and MTP draft GGUF paths, then selects Multi Token Prediction decoding. Optional draft tuning remains available under Speculative decoding.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftNMax", "specDraftNMin"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": { "specType": "draft-mtp" }
+      "fieldIds": ["modelPath", "specDraftModel"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": { "specType": "draft-mtp" },
+      "fieldPresentation": {
+        "specDraftModel": { "label": "MTP model path", "essentialRole": "draft", "essentialRequired": true }
+      },
+      "appliedArguments": ["--spec-type draft-mtp"]
     },
     {
       "id": "dflash",
       "label": "DFlash",
       "group": "Speculative",
-      "description": "Uses a DFlash block-diffusion draft model through the existing DFlash model shortcut. It exposes draft model, token, GPU, cache, Flash Attention, and Jinja controls without forcing hardware-dependent defaults.",
+      "description": "Starts with target and DFlash draft GGUF paths, then selects DFlash speculative decoding. Optional draft, cache, and hardware tuning remains available in the full category tabs.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "dflashModel", "specDraftNMax", "specDraftNMin",
-        "specDraftGpuLayers", "specDraftTypeK", "specDraftTypeV", "flashAttn", "jinja"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": {}
+      "fieldIds": ["modelPath", "dflashModel"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": {},
+      "fieldPresentation": {
+        "dflashModel": { "label": "DFlash model path", "essentialRole": "draft", "essentialRequired": true }
+      },
+      "appliedArguments": ["--spec-type draft-dflash"]
     },
     {
       "id": "draftModel",
       "label": "Draft Model",
       "group": "Speculative",
-      "description": "Uses a separate simple draft model through --spec-type draft-simple. It focuses both model sources and the draft probability, device, GPU, and cache controls.",
+      "description": "Starts with target and draft GGUF paths, then selects simple draft-model speculative decoding. Optional draft probability, device, GPU, and cache controls remain under Speculative decoding.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftModel", "specDraftHf",
-        "specDraftNMax", "specDraftNMin", "specDraftPMin", "specDraftPSplit", "specDraftDevice", "specDraftGpuLayers",
-        "specDraftTypeK", "specDraftTypeV"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": { "specType": "draft-simple" }
+      "fieldIds": ["modelPath", "specDraftModel"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": { "specType": "draft-simple" },
+      "fieldPresentation": {
+        "specDraftModel": { "label": "Draft model path", "essentialRole": "draft", "essentialRequired": true }
+      },
+      "appliedArguments": ["--spec-type draft-simple"]
     },
     {
       "id": "eagle3",
       "label": "EAGLE-3",
       "group": "Speculative",
-      "description": "Uses an EAGLE-3 draft model through --spec-type draft-eagle3. It focuses both model sources and the draft probability, device, GPU, and cache controls.",
+      "description": "Starts with target and EAGLE-3 draft GGUF paths, then selects EAGLE-3 speculative decoding. Optional draft probability, device, GPU, and cache controls remain under Speculative decoding.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType", "specDraftModel", "specDraftHf",
-        "specDraftNMax", "specDraftNMin", "specDraftPMin", "specDraftPSplit", "specDraftDevice", "specDraftGpuLayers",
-        "specDraftTypeK", "specDraftTypeV"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": { "specType": "draft-eagle3" }
+      "fieldIds": ["modelPath", "specDraftModel"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": { "specType": "draft-eagle3" },
+      "fieldPresentation": {
+        "specDraftModel": { "label": "EAGLE-3 model path", "essentialRole": "draft", "essentialRequired": true }
+      },
+      "appliedArguments": ["--spec-type draft-eagle3"]
     },
     {
       "id": "ngram",
       "label": "N-gram",
       "group": "Speculative",
-      "description": "Uses simple n-gram pattern matching through --spec-type ngram-simple. It exposes the n-gram length, draft length, and minimum-hit controls without requiring a draft model.",
+      "description": "Starts with the target GGUF path and selects simple n-gram speculative decoding without a draft model. Optional n-gram length and hit controls remain under Speculative decoding.",
       "modes": ["cli", "server"],
-      "fieldIds": [
-        "serverPath", "cliPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo",
-        "ctxSize", "gpuLayers", "flashAttn", "cacheTypeK", "cacheTypeV", "specType",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "ownedFieldIds": [
-        "specDefault", "specType", "dflashModel", "specDraftModel", "specDraftHf", "specDraftNMax", "specDraftNMin",
-        "specDraftPSplit", "specDraftPMin", "specNgramModNMatch", "specNgramModNMin", "specNgramModNMax",
-        "specNgramSimpleSizeN", "specNgramSimpleSizeM", "specNgramSimpleMinHits"
-      ],
-      "values": { "specType": "ngram-simple" }
+      "fieldIds": ["modelPath"],
+      "ownedFieldIds": ["specDefault", "specType", "dflashModel", "specDraftModel"],
+      "values": { "specType": "ngram-simple" },
+      "appliedArguments": ["--spec-type ngram-simple"]
     },
     {
       "id": "chatApi",
       "label": "Chat / API",
       "group": "Server workloads",
-      "description": "Focuses a standard chat-completion and HTTP API server configuration. It clears embedding and reranking workload modes but leaves optional Jinja, reasoning, templates, and experimental tools under user control.",
+      "description": "Starts with the target GGUF path for a standard chat-completion and HTTP API server. Optional listener, authentication, template, and runtime settings remain in their full category tabs.",
       "modes": ["server"],
-      "fieldIds": [
-        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "gpuLayers",
-        "flashAttn", "cacheTypeK", "cacheTypeV", "host", "port", "alias", "apiKey", "apiKeyFile", "parallel",
-        "jinja", "reasoning", "reasoningFormat", "chatTemplate", "tools"
-      ],
+      "fieldIds": ["modelPath"],
       "ownedFieldIds": ["embedding", "rerank", "pooling"],
-      "values": { "embedding": false, "rerank": false, "pooling": "" }
+      "values": { "embedding": false, "rerank": false, "pooling": "" },
+      "appliedArguments": []
     },
     {
       "id": "embeddings",
       "label": "Embeddings",
       "group": "Server workloads",
-      "description": "Configures llama-server for a dedicated embeddings workload. It enables embedding-only mode while leaving pooling unset so llama.cpp can use the model default.",
+      "description": "Starts with the target GGUF path and enables llama-server's embeddings workload. Optional pooling, normalization, batching, and listener settings remain in their full category tabs.",
       "modes": ["server"],
-      "fieldIds": [
-        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "batchSize",
-        "ubatchSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "embedding", "pooling", "embdNormalize", "parallel",
-        "host", "port", "alias", "apiKey", "apiKeyFile"
-      ],
+      "fieldIds": ["modelPath"],
       "ownedFieldIds": ["embedding", "rerank", "pooling"],
-      "values": { "embedding": true, "rerank": false, "pooling": "" }
+      "values": { "embedding": true, "rerank": false, "pooling": "" },
+      "appliedArguments": ["--embedding"]
     },
     {
       "id": "reranking",
       "label": "Reranking",
       "group": "Server workloads",
-      "description": "Configures llama-server for the reranking endpoint with embedding mode and rank pooling. It exposes the model, batch, parallel, listener, alias, and authentication controls needed around that semantic requirement.",
+      "description": "Starts with the target GGUF path and enables llama-server's reranking endpoint with rank pooling. Optional normalization, batching, and listener settings remain in their full category tabs.",
       "modes": ["server"],
-      "fieldIds": [
-        "serverPath", "modelPath", "hfRepo", "hfFile", "hfToken", "modelUrl", "dockerRepo", "ctxSize", "batchSize",
-        "ubatchSize", "gpuLayers", "cacheTypeK", "cacheTypeV", "embedding", "rerank", "pooling", "embdNormalize",
-        "parallel", "host", "port", "alias", "apiKey", "apiKeyFile"
-      ],
+      "fieldIds": ["modelPath"],
       "ownedFieldIds": ["embedding", "rerank", "pooling"],
-      "values": { "embedding": true, "rerank": true, "pooling": "rank" }
+      "values": { "embedding": true, "rerank": true, "pooling": "rank" },
+      "appliedArguments": ["--embedding", "--rerank", "--pooling rank"]
     }
   ],
   "categories": [
@@ -6032,6 +6194,7 @@
     {
       "id": "serverPath",
       "label": "Server executable",
+      "category": "advanced",
       "modes": [
         "server"
       ],
@@ -6043,6 +6206,7 @@
     {
       "id": "cliPath",
       "label": "CLI executable",
+      "category": "advanced",
       "modes": [
         "cli"
       ],

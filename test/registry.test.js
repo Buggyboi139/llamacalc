@@ -99,6 +99,32 @@ test('registry exposes the complete current command preset catalogue', () => {
     assert.equal(registry.allById.get('dflashModel').category, 'speculative');
 });
 
+test('registry exposes and validates the JSON compatibility catalogue', () => {
+    const registry = createRegistry(data);
+    const ruleIds = registry.compatibilityRules.map(rule => rule.id);
+
+    for (const id of [
+        'flash-off-quantized-main-v',
+        'flash-off-quantized-draft-v',
+        'tensor-requires-flash',
+        'tensor-quantized-cache',
+        'source-conflict',
+        'draft-source-conflict',
+        'output-constraint-conflict',
+        'prompt-source-conflict',
+        'chat-template-conflict',
+        'tensor-split-ignored',
+        'main-gpu-ignored',
+        'fit-settings-ignored'
+    ]) {
+        assert.ok(ruleIds.includes(id), id);
+    }
+
+    const invalid = JSON.parse(JSON.stringify(data));
+    invalid.compatibilityRules[0].when.all[0].fieldId = 'missingField';
+    assert.match(validateRegistry(invalid).join('\n'), /unknown compatibility field missingField/);
+});
+
 test('DFlash shortcut tracks the current accepted speculative type', () => {
     const documentation = fs.readFileSync('/home/dsmason321/llama.cpp/docs/speculative.md', 'utf8');
     assert.match(documentation, /--spec-type draft-dflash/);
